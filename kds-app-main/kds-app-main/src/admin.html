@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>KDS ADMIN</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/config.css" rel="stylesheet">
+    <link href="css/clientconfig.css" rel="stylesheet">
+    <script type="text/javascript" src="js/dialog.js"></script>
+    <script type="text/javascript" src="js/comms.js"></script>
+  </head>
+
+  <body class="settings-app" oncontextmenu="return false;" onselectstart="return false" ondragstart="return false;">
+
+    <div class="settings-header">
+      <div>
+        <h1>KDS Admin</h1>
+        <div class="settings-header-sub">Background service status, logs, and maintenance</div>
+      </div>
+      <div class="settings-header-nav">
+        <input class="btn btn-secondary" onclick="window.location = 'index.html';" type="button" value="Home">
+        <input class="btn btn-secondary" onclick="window.location = 'config.html';" type="button" value="Config">
+      </div>
+    </div>
+
+    <div class="settings-tab-panel active admin-services-panel" style="padding-top:24px;">
+
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <h2>KDS TCP Server</h2>
+        </div>
+        <div class="service-row">
+          <div class="service-col">
+            <span class="service-col-label">Logs</span>
+            <ol id="kdstcplog" class="service-log">
+              <li>no entry yet</li>
+            </ol>
+          </div>
+          <div class="service-col service-col-status">
+            <span class="service-col-label">Status</span>
+            <input class="status-pill" type="text" placeholder="unknown" disabled id="kdstcpstatus">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <h2>KDS Poller</h2>
+        </div>
+        <div class="service-row">
+          <div class="service-col">
+            <span class="service-col-label">Logs</span>
+            <ol id="kdspollerlog" class="service-log">
+              <li>no entry yet</li>
+            </ol>
+          </div>
+          <div class="service-col service-col-status">
+            <span class="service-col-label">Status</span>
+            <input class="status-pill" type="text" placeholder="unknown" disabled id="kdspollerstatus">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <h2>KDS Nats</h2>
+        </div>
+        <div class="service-row">
+          <div class="service-col">
+            <span class="service-col-label">Logs</span>
+            <ol id="kdsnatslog" class="service-log">
+              <li>no entry yet</li>
+            </ol>
+          </div>
+          <div class="service-col service-col-status">
+            <span class="service-col-label">Status</span>
+            <input class="status-pill" type="text" placeholder="unknown" disabled id="kdsnatsstatus">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <h2>KDS Web</h2>
+        </div>
+        <div class="service-row">
+          <div class="service-col">
+            <span class="service-col-label">Logs</span>
+            <ol id="kdsweblog" class="service-log">
+              <li>no entry yet</li>
+            </ol>
+          </div>
+          <div class="service-col service-col-status">
+            <span class="service-col-label">Status</span>
+            <input class="status-pill" type="text" placeholder="unknown" disabled id="kdswebstatus">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group admin-actions-group">
+        <div class="settings-group-header">
+          <h2>Maintenance Actions</h2>
+          <p>Applies to all four services above, not just one</p>
+        </div>
+        <div class="settings-actions" style="justify-content:flex-start;">
+          <input class="btn btn-primary" onclick="queryservices();" type="button" value="Check Status">
+          <input class="btn btn-secondary" onclick="restartservices();" type="button" value="Restart Services">
+          <input class="btn btn-secondary" onclick="updateservice();" type="button" value="Update All Services">
+          <input class="btn btn-secondary" onclick="autostart();" type="button" value="Install Autostart">
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

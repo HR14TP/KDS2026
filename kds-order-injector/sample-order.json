@@ -1,0 +1,30 @@
+[
+  {
+    "id": "SAMPLE-0001",
+    "productCenter": "Kitchen",
+    "tableName": "Table 7",
+    "waiterName": "Jane D",
+    "deviceID": "kds-order-injector",
+    "dateTime": "2026-01-01T12:00:00Z",
+    "notes": "sample order for -file testing",
+    "items": [
+      {
+        "sku": "BRG001",
+        "name": "Beef Burger",
+        "qty": 2,
+        "price": 8500,
+        "note": "No pickles",
+        "subItems": [
+          { "qty": 1, "name": "Extra Cheese", "price": 1000 }
+        ]
+      },
+      {
+        "sku": "BEV001",
+        "name": "Coke 300ml",
+        "qty": 2,
+        "price": 2500,
+        "subItems": []
+      }
+    ]
+  }
+]

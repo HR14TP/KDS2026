@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>KDS REGISTRATION</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/config.css" rel="stylesheet">
+    <link href="css/clientconfig.css" rel="stylesheet">
+    <script type="text/javascript" src="js/frontend/frontend.js"></script>
+</head>
+
+<body class="settings-app" oncontextmenu="return false;" onselectstart="return false" onload="frontend._register.initialize()"
+    ondragstart="return false;">
+
+    <div class="settings-header">
+        <div>
+            <h1>KDS Registration</h1>
+            <div class="settings-header-sub">Connect this terminal to your KDS network</div>
+        </div>
+    </div>
+
+    <div class="settings-tab-panel active" style="padding-top:24px;">
+        <form id="clientform">
+            <div class="settings-group">
+                <div class="settings-group-header">
+                    <h2>Terminal Setup</h2>
+                    <p>Enter the connection code provided for this terminal</p>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-row-text">
+                        <label class="setting-row-title" for="serialField">Registration Key</label>
+                    </div>
+                    <div class="setting-row-control setting-row-control-text">
+                        <input type="password" id="serialField">
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-actions" style="justify-content:space-between;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                    <input class="btn btn-secondary" onclick="frontend.exitApp()" type="button" value="Close The App">
+                    <input class="btn btn-secondary" onclick="window.KDSAPI.skipRegistration()" type="button" value="Skip For 72 Hours">
+                </div>
+                <input class="btn btn-primary" onclick="frontend._register.registerTerminal()" type="button" value="Register Terminal">
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

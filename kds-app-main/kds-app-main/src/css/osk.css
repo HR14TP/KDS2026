@@ -1,0 +1,90 @@
+/* On-screen keyboard (src/js/frontend/osk.js) - shown automatically while
+   a text/number field on this page has focus, for kiosk terminals with no
+   physical keyboard attached. */
+
+body.osk-active {
+	/* Keeps whatever field is being typed into from staying permanently
+	   hidden behind the keyboard - see osk.js's scrollIntoView, which
+	   relies on this extra room existing to scroll up into. */
+	padding-bottom: 360px;
+}
+
+.onscreenkeyboard {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 5000;
+	background-color: #263238;
+	box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.4);
+	padding: 10px 10px 14px;
+	box-sizing: border-box;
+	transform: translateY(105%);
+	transition: transform 0.18s ease-out;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.onscreenkeyboard.osk-open {
+	transform: translateY(0);
+}
+
+.osk-row {
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.osk-key {
+	flex: 1 1 0;
+	min-width: 30px;
+	max-width: 60px;
+	height: 52px;
+	background-color: #455a64;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	font-size: 18px;
+	font-weight: bold;
+	text-transform: none;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.osk-key:active {
+	background-color: #607d8b;
+	transform: scale(0.96);
+}
+
+.osk-key-wide {
+	flex: 1.6 1 0;
+	max-width: 90px;
+	font-size: 20px;
+}
+
+.osk-key-symbol {
+	max-width: 52px;
+}
+
+.osk-key-space {
+	flex: 5 1 0;
+	max-width: none;
+}
+
+.osk-key-done {
+	flex: 1.8 1 0;
+	max-width: 130px;
+	background-color: #4caf50;
+	font-size: 16px;
+}
+
+.osk-key-done:active {
+	background-color: #43a047;
+}
+
+.onscreenkeyboard.osk-shift .osk-key-wide[data-osk="shift"] {
+	background-color: #ffb300;
+	color: #263238;
+}

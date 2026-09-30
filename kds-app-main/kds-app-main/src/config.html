@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>KDS CONFIG</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/config.css" rel="stylesheet">
+    <script type="text/javascript" src="js/frontend/frontend.js"></script>
+  </head>
+  
+  <body oncontextmenu="return false;" onselectstart="return false" onload="frontend._config.initialize()" ondragstart="return false;">
+
+    <div class="container">
+        <div class="row">
+          <div class="column column-50">
+              <h1>KDS CONFIG SETTINGS</h1>
+          </div>
+          <div class="column column-40">
+            <input class="button" onclick="window.location = 'index.html';" style="background-color: cadetblue;" type="button" value="KDS HOME">
+        </div>
+        </div>
+    </div>
+
+    <div class="container" style="background-color: white;">
+        <form id="clientform">
+            <blockquote>
+                <h4>CLIENT SETUP</h4>
+            </blockquote> 
+            <div class="row">            
+                <div class="column column-50">
+                    <label for="nameField">Client Name</label>
+                    <input type="text" placeholder="Joes Pizza" id="nameField">
+                </div>
+                <div class="column column-40">
+                    <label for="locationField">Location/Store Name</label>
+                    <input type="text" placeholder="Corner Street" id="locationField">
+                </div>
+            </div>
+            <div class="row"> 
+                <div class="column">
+                    <label for="kdsField">KDS Name</label>
+                    <input type="text" placeholder="Grill" id="kdsField">
+                </div>
+                <div class="column">
+                    <label for="ipField">IP Address</label>
+                    <input type="text" placeholder="10.0.0.1" id="ipField">
+                </div>
+            </div>            
+        <blockquote>
+            <h4>KDS SETTINGS</h4>
+        </blockquote>
+        <div class="row">            
+            <div class="column">
+                <input type="checkbox" id="compressitems">
+                <label class="label-inline" for="compressitems">Enable Item Compression</label>
+                <br />
+                <small>this option combines the main items together on the main display</small>
+                <hr />
+            </div>
+            <div class="column">
+                <input type="checkbox" id="showheadings">
+                <label class="label-inline" for="showheadings">Show Account Profile Headings</label>
+                <br />
+                <small>this option shows the account profile used on the main display per order</small>
+                <hr />
+            </div>
+        </div>
+        <div class="row">            
+            <div class="column">
+                <input type="checkbox" id="leftalign">
+                <label class="label-inline" for="leftalign">Align Main & Sub Items Left</label>
+                <br />
+                <small>this option left align items and subitems , unchecking it centers the items and subitems</small>
+                <hr />
+            </div>
+            <div class="column">
+                <input type="checkbox" id="checkboxes">
+                <label class="label-inline" for="checkboxes">Enable Checkboxes Per Item</label>
+                <br />
+                <small>this option allows you to tick of a item from a order by use of checkboxes</small>
+                <hr />
+            </div>
+        </div>
+        <div class="row">
+            <div class="column">
+                <input type="checkbox" id="passmode">
+                <label class="label-inline" for="passmode">Enable Pass Mode</label>
+                <br />
+                <small>this option allows this KDS to close an order; the Close Order button is hidden unless pass mode is enabled</small>
+                <hr />
+            </div>
+        </div>
+        <div class="row">
+            <div class="column">
+                <input type="color" id="late1color" value="#CECECE">
+                <label class="label-inline" for="late1color">Please choose color for the first notification</label>
+                <br />
+                <small>this will color the order block after the amount of time specified.</small>
+                <hr />
+            </div>
+            <div class="column">
+                <input type="color" id="late2color" value="#CECECE">
+                <label class="label-inline" for="late2color">Please choose color for the second notification</label>
+                <br />
+                <small>this will color the order block after the amount of time specified.</small>
+                <hr />
+            </div>
+        </div>
+        <div class="row">
+            <div class="column">
+                <input type="number" style="width:90%;" id="late1time">
+                <label class="label-inline" for="late1time">Please choose the first timer in minutes </label>
+                <br />
+                <small>this will color the order block after the amount of time specified.</small>
+                <hr />
+            </div>
+            <div class="column">
+                <input type="number" style="width:90%;" id="late2time">
+                <label class="label-inline" for="late2time">Please choose the second timer in minutes </label>
+                <br />
+                <small>this will color the order block after the amount of time specified.</small>
+                <hr />
+            </div>
+        </div>
+        <div class="row"> 
+            <div class="column">
+                <input class="button-primary" onclick="frontend._config.saveConfig()" type="button" value="SAVE SETTINGS">
+            </div>
+            <div class="column">
+                <input class="button-primary" onclick="frontend.exitApp()" type="button" value="CLOSE THE APP">
+            </div>
+        </div>
+        </form>
+    </div>      
+  </body>

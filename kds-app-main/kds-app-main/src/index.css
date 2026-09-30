@@ -1,0 +1,49 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: auto;
+  max-width: 38rem;
+  padding: 2rem;
+}
+.extrainformation {
+  background-color: #fea4a4;
+}
+.doright {
+  text-wrap: normal;
+}
+.docenter {
+  text-align: center!important;
+}
+.textleft{
+  text-align: left!important;
+}
+.fullcolumn {
+  width:100%!important;
+}
+input[type='checkbox'] {
+  width:30px;
+  height:30px;
+}
+input[type='checkbox']:checked {
+  background: #abd;
+}
+.doneitem {
+  text-decoration: line-through;
+}
+.b-tab {
+  padding: 20px;
+  border: 1px solid #000;
+  display: none;
+}
+
+.b-tab.active {
+  display: block;
+}
+
+.b-nav-tab {
+  display: inline-block;
+  padding: 20px;
+}
+
+.b-nav-tab.active {
+  background-color:green !important;
+}

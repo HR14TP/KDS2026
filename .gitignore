@@ -1,0 +1,22 @@
+# Dependencies (reinstall with npm install / go mod download)
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Machine-local Claude Code settings (personal overrides, not shared)
+.claude/settings.local.json
+
+# Secrets - never commit
+kds-golang-lib-main/kds-golang-lib-main/github
+
+# Prebuilt/packaged binaries - rebuild via build-and-package.sh / seed-custom-binaries.sh
+kds2024-update-package/kds2024_1.0.0_amd64.deb
+kds2024-update-package/kdspoller-linux
+kds2024-update-package/kdswebserver-linux
+kds-order-injector/kds-order-injector-linux
+kds-webserver-main/kds-webserver-main/kds-webserver
+kds-poller-main/kds-poller-main/files/kdspoller-linux
+kds-webserver-main/kds-webserver-main/files/kdswebserver-linux
+kds-webserver-main/kds-webserver-main/files/kdswebserver-linux-v2-NEW

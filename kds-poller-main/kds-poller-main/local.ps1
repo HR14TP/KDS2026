@@ -1,0 +1,1 @@
+Invoke-Expression "go run .\pkg\. --base='C:\Users\rever\AppData\Roaming\kdstabletpos'"

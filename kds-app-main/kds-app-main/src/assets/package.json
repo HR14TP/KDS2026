@@ -1,0 +1,118 @@
+{
+  "name": "kdstabletpos",
+  "appId": "com.tabletpos.kds",
+  "productName": "kdstabletpos",
+  "version": "1.12.2",
+  "description": "K-Series KDS Tabletpos",
+  "main": "src/index.js",
+  "copyright": "Tabletpos",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\"",
+    "make-mac": "npx @electron-forge/cli make --platform darwin"
+  },
+  "homepage": "https://bitbucket.org/tabletpos/kds-tabletpos#readme",
+  "build": {
+    "appId": "kdstabletpos",
+    "linux": {
+      "target": "deb",
+      "category": "Utility",
+      "icon": "src/assets/icon.png",
+      "artifactName": "${productName}-latest-${arch}.${ext}",
+      "publish": {
+        "provider": "s3",
+        "bucket": "kdsdailybackup",
+        "path": "releases/dist",
+        "acl": "public-read"
+      }
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.png",
+      "legalTrademarks": "kdstabletpos",
+      "publisherName": "kdstabletpos",
+      "artifactName": "${productName}-latest.exe",
+      "publish": {
+        "provider": "s3",
+        "bucket": "kdsdailybackup",
+        "path": "releases/dist",
+        "acl": "public-read"
+      }
+    },
+    "asar": true
+  },
+  "keywords": [],
+  "author": {
+    "name": "Hanno Bean",
+    "email": "hanno@tabit.co.za"
+  },
+  "license": "MIT",
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "name": "kdstabletpos",
+        "executableName": "kdstabletpos",
+        "icon": "src/assets/icon.ico"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "kdstabletpos",
+            "setupIcon": "src/assets/icon.ico"
+          },
+          "platforms": [
+            "win32"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "linux",
+            "darwin"
+          ],
+          "config": {
+            "arch": "armv7l"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.3.0",
+    "@electron-forge/maker-deb": "^7.3.0",
+    "@electron-forge/maker-rpm": "^7.3.0",
+    "@electron-forge/maker-squirrel": "^7.3.0",
+    "@electron-forge/maker-zip": "^7.3.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
+    "@electron-forge/plugin-fuses": "^7.2.0",
+    "@electron/fuses": "^1.7.0",
+    "electron": "29.0.1"
+  },  
+  "dependencies": {
+    "@sentry/electron": "^4.18.0",
+    "crypto": "^1.0.1",
+    "electron-log": "^5.1.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "find-process": "^1.4.7",
+    "howler": "^2.2.4",
+    "nats": "^2.19.0",
+    "node-thermal-printer": "^4.4.2",
+    "sudo-prompt": "^9.2.1",
+    "toastify-js": "^1.12.0",
+    "tree-kill": "^1.2.2",
+    "twilio": "^4.22.0",
+    "xmlhttprequest": "^1.8.0"
+  }
+}

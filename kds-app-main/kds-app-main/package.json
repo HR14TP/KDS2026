@@ -1,0 +1,49 @@
+{
+  "name": "kdstabletpos",
+  "productName": "kdstabletpos",
+  "version": "1.12.2",
+  "description": "My Electron application description",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.3.0",
+    "@electron-forge/maker-deb": "^7.3.0",
+    "@electron-forge/maker-rpm": "^7.3.0",
+    "@electron-forge/maker-squirrel": "^7.3.0",
+    "@electron-forge/maker-zip": "^7.3.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.3.0",
+    "@electron-forge/plugin-fuses": "^7.2.0",
+    "@electron/fuses": "^1.7.0",
+    "electron": "29.0.1"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Hanno Bean",
+    "email": "hanno.bean@loopon.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@sentry/electron": "^4.18.0",
+    "crypto": "^1.0.1",
+    "electron-log": "^5.1.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "find-process": "^1.4.7",
+    "howler": "^2.2.4",
+    "nats": "^2.19.0",
+    "node-thermal-printer": "^4.4.2",
+    "sudo-prompt": "^9.2.1",
+    "toastify-js": "^1.12.0",
+    "tree-kill": "^1.2.2",
+    "twilio": "^4.22.0",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "allowScripts": {
+    "electron@29.0.1": true
+  }
+}

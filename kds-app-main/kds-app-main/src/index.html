@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <title>KDS</title>
+    
+    <link rel="stylesheet" href="index.css">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/toastify.css" rel="stylesheet">      
+    
+    <script>
+      var kdsscreen = 'grill';
+      var current_page = 'grill';
+    </script>
+      <link href="css/wimpy.css" rel="stylesheet">
+      <script type="text/javascript" src="js/dialog.js"></script>
+      <script type="text/javascript" src="js/frontend/frontend.js"></script>      
+  </head>
+  
+  <body onload="frontend.initialize();" onkeypress="KDS.keypress(event)" oncontextmenu="return false;" onselectstart="return false" ondragstart="return false;">
+    <audio id="kdsaudio">    
+      <source src="assets/ding.mp3" type="audio/mpeg">    
+    </audio>
+    <div id="summary">
+      <div class="summary_content">
+        <div class="row">
+          <div class="column"><button onclick="KDS.hide_summary()" class="button button-dark-blue">HIDE SUMMARY</button></div>        
+        </div>
+        <hr />
+        <div id="summary_counts">
+
+        </div>
+        <hr />
+        <!-- Populated by KDS.render_summary() as three sections - not
+             produced/in production/completed (see kds.js) - instead of a
+             flat item list, so an item's row here carries the same color
+             language as its badge on the board, and any sub-items sit
+             right under their own parent item's row within that section. -->
+        <div id="main_summary">
+
+        </div>
+      </div>
+                  
+    </div>
+  <div id="cardss">
+
+  </div>
+
+  <div class="footer">
+      <div class="row">
+          <div class="column"><button id="screen_button" class="button button-black">KDS</button></div>
+          <div class="column"><button id="connection_status" class="button button-red">1.12.2</button></div>
+  
+          <div class="column"><button class="button button-light-blue">AVG PREP TIME</button></div>
+          <div class="column"><button id="preptimebutton" class="button button-light-blue">00:00</button></div>
+          <div class="column" id="recallorderscolumn"><button onclick="javascript:KDS.prompt_completed()" class="button button-dark-blue">RECALL ORDERS</button></div>
+          <div class="column"><button onclick="javascript:location.reload();" class="button button-dark-blue">RELOAD</button></div>
+  
+          <!--<div class="column"><button onclick="frontend._home.goConfig();" class="button button-dark-blue">CONFIG</button></div>-->
+          <div class="column"><button onclick="window.location = 'clientconfig.html';" class="button button-dark-blue">CONFIG</button></div>
+          <div class="column"><button onclick="frontend._home.goAdmin();" class="button button-dark-blue">ADMIN</button></div>
+          <div class="column"><button onclick="KDS.show_summary()" class="button button-dark-blue">SUMMARY</button></div>
+          <div class="column"><button id="system_time" class="button button-black">00:00</button></div>
+      </div>
+  </div>
+  
+  </body>

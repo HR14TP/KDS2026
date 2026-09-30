@@ -1,0 +1,1018 @@
+body {
+	background-color: black !important;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+	width: 100%;
+	height: 100%;
+	/* index.css (loaded before this file) sets a generic centered-article
+	   body style - max-width:38rem, margin:auto, padding:2rem - meant for
+	   a simple text page, not this full-screen board. Left in place there
+	   was shrinking the whole board down to about one card's width,
+	   forcing every order into a single stacked column with the page
+	   itself scrolling instead of cards filling the screen left-to-right. */
+	max-width: none;
+	margin: 0;
+	padding: 0;
+	/* Harmless either way (doesn't change layout/density), so left
+	   unconditional rather than gated behind Touch Interface below: kills
+	   the blue flash Chromium shows on tap and the long-press
+	   text-selection callout, on top of the per-element
+	   onselectstart="return false" already used elsewhere. */
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* ==================== TOUCH INTERFACE (KDS config toggle) ================
+   Everything below only applies once body has the "touchui" class, set by
+   KDS.init() from the "Enable Touch Interface" config checkbox. Off by
+   default: the original, denser layout is what every existing install
+   keeps seeing unless someone explicitly opts in. Selectors are written
+   with the body.touchui prefix specifically so they win on specificity
+   against Milligram's own (e.g. "input[type='button']" is more specific
+   than a bare ".button", but "body.touchui input[type='button']" beats
+   both regardless of stylesheet order). */
+body.touchui {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Milligram's own buttons/inputs are 38px tall with 11px text - workable
+   with a mouse, too small and easy to mis-tap on a kitchen touchscreen
+   (greasy fingers, gloves, moving fast). :not(.closeorderbutton) matters:
+   a bare "button" tag selector is MORE specific than a single custom
+   class, so without it this silently beat .closeorderbutton's own
+   height:100% (needed to fill its column) and collapsed it down to a
+   squashed min-height:54px sliver regardless of which rule loaded last. */
+body.touchui .button, body.touchui button:not(.closeorderbutton), body.touchui input[type='button'], body.touchui input[type='reset'], body.touchui input[type='submit'] {
+	height: auto;
+	min-height: 54px;
+	font-size: 1.5rem;
+	padding: 10px 26px;
+	line-height: 1.3;
+	touch-action: manipulation;
+}
+
+body.touchui input[type='email'], body.touchui input[type='number'], body.touchui input[type='password'], body.touchui input[type='search'], body.touchui input[type='tel'], body.touchui input[type='text'], body.touchui input[type='url'], body.touchui textarea, body.touchui select {
+	height: auto;
+	min-height: 52px;
+	font-size: 1.6rem;
+	padding: 10px 14px;
+	/* Overrides body.touchui's own user-select:none above - typing/cursor
+	   placement/selection needs to keep working inside actual fields. */
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+/* Sized for a deliberate tap rather than a precise mouse click - matches
+   the per-item "mark complete" checkbox already used on the order board. */
+body.touchui input[type='checkbox'], body.touchui input[type='radio'] {
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+	touch-action: manipulation;
+	/* Default vertical-align:baseline sits a 32px box well above its
+	   label's text baseline instead of level with it - looks like the
+	   checkbox and its own label don't belong together. */
+	vertical-align: middle;
+}
+body.touchui .tile-collapse-toggle {
+	padding: 12px 8px;
+	font-size: 105%;
+	touch-action: manipulation;
+}
+.break {
+	flex-basis: 100%;
+	height: 0;
+}
+.break-column {
+	flex-basis: 100%;
+	width: 0;
+}
+.multicolumn {
+	-webkit-column-count: 2; /* Chrome, Safari, Opera */
+	-moz-column-count: 2; /* Firefox */
+	column-count: 2;
+}
+.multicolumn3 {
+	-webkit-column-count: 3; /* Chrome, Safari, Opera */
+	-moz-column-count: 3; /* Firefox */
+	column-count: 3;
+}
+
+/* #makesingle is exclusively the order detail dialog's item list (see
+   KDS.prompt_dialog/message_single_generate) - for an order with 10+/20+
+   items it was picking up .multicolumn/.multicolumn3 above and getting
+   split into 2-3 CSS newspaper columns, each far too narrow for the
+   fixed-width production-control/checkbox columns each item row needs -
+   text fragmented down to one letter per line as a result. This list
+   already scrolls vertically on its own (.orderdialogitems), so a
+   single flowing column reads better here than a multi-column split
+   would anyway. ID+class beats the plain class above on specificity, so
+   this reliably wins regardless of source order. */
+#makesingle.multicolumn,
+#makesingle.multicolumn3 {
+	-webkit-column-count: 1;
+	-moz-column-count: 1;
+	column-count: 1;
+}
+
+.multicolumnitem {
+	-webkit-column-count: 2; /* Chrome, Safari, Opera */
+	-moz-column-count: 2; /* Firefox */
+	column-count: 2;
+	margin-bottom: 10px;
+}
+.multicolumnitem3 {
+	-webkit-column-count: 3; /* Chrome, Safari, Opera */
+	-moz-column-count: 3; /* Firefox */
+	column-count: 3;
+	margin-bottom: 10px;
+}
+
+.cardwrapper {
+	border-radius: 10px;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	width: 300px;
+	background-color: #f6f0ef;
+	height: auto;
+	text-transform: uppercase;
+	/* float:left used to live here, but orders vary a lot in height (a
+	   1-item order vs. a 15-item one) - a float that doesn't fit beside a
+	   taller neighbor drops below the whole row, leaving a gap nothing
+	   after it can ever back-fill, even on scroll. #cardss below replaces
+	   this with a CSS multi-column cascade (float:none is the dialog's
+	   own #makesingle .cardwrapper override further down - now the
+	   default here too, so it's listed just for clarity). */
+	float: none;
+}
+
+/* The order detail dialog's card (#makesingle) reuses .cardwrapper's
+   styling (the rounded off-white card look) but not its fixed 300px
+   board-tile width - the dialog itself is already sized relative to the
+   screen (dialog.resizeRelative), and without this override the card
+   inside it stayed pinned to 300px regardless, leaving barely any room
+   for the item name once the production-control/checkbox columns took
+   their fixed width and causing text to fragment character-by-character. */
+#makesingle .cardwrapper {
+	width: 100%;
+	max-width: none;
+	margin-right: 0;
+	float: none;
+}
+.footer {
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	background-color: #2196f3 !important;
+	height: 60px;
+	color: white;
+	text-align: center;
+	padding-top: 10px;
+}
+.button-black {
+	background-color: black;
+	border-color: black;
+}
+.button-green {
+	background-color: green;
+	border-color: green;
+}
+.button-red {
+	background-color: red;
+	border-color: red;
+}
+.button-red:hover {
+	background-color: red;
+	border-color: red;
+}
+.completedentry {
+	border-bottom: 1px solid black;
+	margin-bottom: 10px;
+}
+.button-light-blue {
+	background-color: #33b5e5;
+	border-color: #33b5e5;
+}
+.button-dark-blue {
+	background-color: #4285f4;
+	border-color: #4285f4;
+}
+.margleft {
+	margin-left: 20px;
+}
+.button-massive {
+	width: 90%;
+	height: 100%;
+	min-width: 400px;
+	min-height: 400px;
+	font-size: 30px;
+	border: 10px solid white;
+}
+
+/* The single big "close this order out" action in the order detail dialog -
+   deliberately large for a touchscreen kiosk, but styled as a proper button
+   (rounded, shadowed, pressable) instead of a flat, thick-white-bordered
+   block of color. */
+.closeorderbutton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	min-height: 320px;
+	box-sizing: border-box;
+	padding: 10px;
+	background-color: #d32f2f;
+	color: white;
+	/* Buttons default to white-space:nowrap, which let "CLOSE ORDER" run
+	   off both edges rather than wrapping once this column got narrower
+	   under the grid-based responsive layout - wrapping to two lines
+	   here instead of overflowing is the simplest reliable fix. */
+	font-size: min(6vw, 34px);
+	white-space: normal;
+	text-align: center;
+	line-height: 1.25;
+	font-weight: bold;
+	letter-spacing: 0.05em;
+	border: none;
+	border-radius: 16px;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+	transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.08s ease;
+}
+
+.closeorderbutton:hover {
+	background-color: #c62828;
+}
+
+.closeorderbutton:active {
+	transform: scale(0.98);
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+	background-color: #b71c1c;
+}
+
+/* Order detail dialog heading + its own close button, given some breathing
+   room instead of sitting flush against the item list below. */
+.dialogheading {
+	font-size: 22px;
+	font-weight: bold;
+	color: #263238;
+	letter-spacing: 0.02em;
+	margin-bottom: 10px;
+	display: block;
+}
+
+.dialogtopbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+	padding-bottom: 10px;
+	border-bottom: 2px solid #cfd8dc;
+	flex-shrink: 0;
+}
+
+/* Order detail dialog body: item list + the CLOSE ORDER action side by
+   side, sized as a share of the popup (itself sized relative to the
+   screen via dialog.resizeRelative) rather than fixed pixels, so this
+   scales cleanly across kiosk touchscreens and full desktop monitors.
+   Grid instead of flex: Milligram's ".row .column{flex:1 1 auto;
+   max-width:100%}" is a two-class compound selector that silently
+   outranks single-class flex/max-width overrides here regardless of
+   !important vs. plain or stylesheet order, which made every flex-based
+   attempt at a proportional split collapse back to a near-50/50 divide.
+   Grid's track sizing is a completely separate mechanism Milligram never
+   touches, so grid-template-columns' fr units apply exactly as written. */
+.orderdialogbody {
+	display: grid !important;
+	grid-template-columns: 2fr 1fr;
+	gap: 20px;
+	height: calc(100% - 60px);
+	min-height: 0;
+	/* Cancels Milligram's ".row{margin-left:-1rem;width:calc(100% + 2rem)}"
+	   gutter-compensation trick, which is meaningless (and just causes
+	   overflow) once this is a grid rather than a .column-based row. */
+	width: 100% !important;
+	margin-left: 0 !important;
+}
+
+.orderdialogitems {
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	padding-right: 6px;
+}
+
+.orderdialogclose {
+	min-width: 0;
+	max-width: 420px;
+	display: flex;
+}
+
+/* The START/IN-PROD-timer control in the order detail dialog - a fixed
+   width regardless of which state it's showing (a lone START button vs.
+   an IN PROD tag plus a timer), so this column's left edge - and
+   whatever follows it (the complete checkbox) - lines up at the same
+   spot on every row instead of trailing wherever that row's item name
+   text happened to wrap to. */
+.itemproductioncontrol-wrap {
+	flex: 0 0 170px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+/* The per-item "mark complete" checkbox in the order detail dialog - sits
+   as a fixed-width, non-shrinking flex item next to the (flexible,
+   wrapping) item name/badges rather than a separate percentage-width
+   column, which is what was pushing it onto its own line below the text.
+   Sized up and given a matching accent color since this is a touchscreen
+   control, not a form checkbox. */
+.itemclosecheckbox-wrap {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 10px;
+}
+
+.itemclosecheckbox {
+	width: 30px;
+	height: 30px;
+	cursor: pointer;
+	accent-color: #4caf50;
+}
+
+/* Order detail dialog rows only: this column is always comfortably wide
+   enough for name+control side by side, so pin them to one line (letting
+   the name shrink/wrap its own text) instead of the board tile's default
+   of dropping the control to its own line - here that would just leave
+   the checkbox stranded in an empty white box under the text. */
+.wrapperdiv-inline {
+	flex-wrap: nowrap !important;
+}
+
+.doleft {
+	float: left;
+	text-align: left;
+}
+.doright {
+	float: right;
+	text-align: right;
+}
+
+.headitem {
+	border: none;
+	color: black;
+	text-transform: uppercase;
+	font-weight: normal;
+	font-size: 12px;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+.headitemlarger {
+	border: none;
+	color: black;
+	text-transform: uppercase;
+	font-weight: bold;
+	font-size: 14px;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+.profileitem {
+	margin-bottom: 0;
+	border-top: 1px solid black;
+	border-bottom: 0px solid black;
+	font-weight: normal;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+	color: black;
+	text-transform: uppercase;
+}
+/* The one part of a tile that actually scrolls when an order has more
+   items than fit under --tile-max-height (see #cardss .cardwrapper) -
+   header (chk/timer/waiter/table/tilecounts) and the collapse toggle stay
+   fixed in place above this, only the item list itself scrolls. flex:1 1
+   auto lets it claim whatever space is left inside the tile's own
+   flex-column layout; min-height:0 is required for that to actually be
+   allowed to shrink below its content's natural height in a flex child
+   (the classic flexbox overflow gotcha - without it this would just push
+   the tile taller instead of scrolling). */
+.mainitems_wrapper {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+}
+.mainitemcolor {
+	background-color: var(--mainitemcolor);
+}
+.drivethrucolor {
+	color: #622ba1 !important;
+}
+.takeawaycolor {
+	color: #0b4d00 !important;
+}
+.transfernotice {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	box-sizing: border-box;
+	background-color: #9575cd !important;
+	color: white;
+	font-weight: bold;
+	font-size: 90%;
+	text-align: center;
+	padding: 6px 8px;
+	margin: 4px 0;
+	border-radius: 4px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+.orderyellow {
+	background-color: var(--late1color) !important;
+}
+.late1colorclass {
+	background-color: var(--late1color) !important;
+}
+.late2colorclass {
+	background-color: var(--late2color) !important;
+}
+.scroll {
+	max-height: 90vh;
+	overflow-y: auto;
+}
+
+.otherelemsaredone {
+	border: 5px solid green;
+}
+
+.offline {
+	background-color: red;
+}
+
+.online {
+	background-color: green;
+}
+
+.orderred {
+	background-color: #fea4a4 !important;
+}
+
+.ordercourse {
+	background-color: #cecece;
+	text-align: center;
+}
+
+.buttonshadow {
+	box-shadow: 4px 5px 5px 0px rgba(75, 75, 75, 0.90);
+}
+.orderlate2 {
+	background-color: var(--late2color) !important;
+}
+.wrapperdiv {
+	font-size: 100%;
+	line-height: 1.5;
+	display: flex;
+	align-items: center;
+	/* Chromium's flex line-breaking check runs against each item's
+	   content-based hypothetical width BEFORE shrinking is applied - on a
+	   narrow board tile with a wide badge+timer pair, forcing everything
+	   onto one line (nowrap) leaves so little room for the name that long
+	   words get broken mid-word instead of at word boundaries. "wrap"
+	   lets the badge/timer drop to their own line below when they don't
+	   fit, so the name keeps a full-width line to wrap normally on. Where
+	   there IS always room for name+control on one line (the order detail
+	   dialog's checkbox rows), .wrapperdiv-inline below overrides this. */
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 2px 4px;
+	font-weight: bold;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	color: black;
+	border-top: 7px solid gray;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+/* Was referenced everywhere but never defined - the item-name column
+   needs to flex-grow/shrink to fill whatever space the badge/timer
+   siblings leave, and min-width:0 lets long names wrap inside that
+   space instead of forcing the row to overflow. */
+.fullcolumn {
+	flex: 1 1 auto;
+	/* index.css defines its OWN .fullcolumn with width:100%!important
+	   (loaded before this file, easy to miss) - that width becomes this
+	   item's flex-basis (flex-basis:auto resolves to the width property),
+	   making its hypothetical size the FULL row width regardless of
+	   min-width, so the flex-wrap line-breaking decision (which happens
+	   before shrinking is applied) always pushed any sibling badge/
+	   checkbox onto its own line below. The !important here is load-bearing:
+	   this file loads after index.css, but without it index.css's
+	   !important still wins on specificity ties. Overriding to width:auto
+	   lets the basis follow actual content instead, so it only wraps when
+	   the name and its siblings genuinely don't fit. */
+	width: auto !important;
+	min-width: 0;
+	padding: 2px 4px;
+	box-sizing: border-box;
+}
+
+.docenter {
+	text-align: left;
+}
+.subitemwrapper {
+	border: none;
+	background-color: var(--subitemcolor);
+	color: black;
+	text-transform: capitalize;
+	overflow-y: auto;
+	text-align: left;
+	font-size: 95%;
+	line-height: 1.1;
+	font-weight: bold;
+	padding: 2px;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.makewhite {
+	background-color: white;
+}
+
+.makegreen {
+	background-color: #9acd32;
+}
+
+.orderkiddies {
+	background-color: #02bcf5 !important;
+}
+
+.ordervoid {
+	background-color: red !important;
+}
+
+/* "In production" feature */
+.iteminproduction {
+	border-top: 7px solid #ef6c00 !important;
+}
+
+.production-tag {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	background-color: #ef6c00;
+	color: white;
+	font-size: 70%;
+	font-weight: bold;
+	letter-spacing: 0.03em;
+	text-align: center;
+	white-space: nowrap;
+	padding: 3px 10px;
+	border-radius: 12px;
+	margin-left: 6px;
+	vertical-align: middle;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.production-tag-clickable {
+	cursor: pointer;
+}
+
+.production-tag-complete {
+	background-color: #4caf50;
+	color: white;
+}
+
+.production-tag-void {
+	background-color: #212121;
+	color: white;
+}
+
+.start-production-btn {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	font-size: 70%;
+	font-weight: bold;
+	letter-spacing: 0.03em;
+	text-align: center;
+	white-space: nowrap;
+	padding: 3px 10px;
+	margin-left: 6px;
+	background-color: #616161;
+	border: none;
+	color: white;
+	border-radius: 12px;
+	cursor: pointer;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.production-timer {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	font-size: 70%;
+	font-weight: bold;
+	text-align: center;
+	white-space: nowrap;
+	padding: 3px 10px;
+	margin-left: 6px;
+	background-color: #424242;
+	color: white;
+	border-radius: 12px;
+	vertical-align: middle;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Touch Interface (KDS config toggle): the START/IN-PROD/timer pills are
+   the single most frequently tapped controls during service - bump them
+   from a mouse-precision 70%-font/3px-padding pill up to something a
+   finger (or a gloved one) can hit reliably without also touching its
+   neighbor, and give them more breathing room from each other. */
+body.touchui .production-tag,
+body.touchui .start-production-btn,
+body.touchui .production-timer {
+	font-size: 95%;
+	padding: 10px 16px;
+	min-height: 44px;
+	margin-left: 10px;
+	border-radius: 14px;
+	touch-action: manipulation;
+}
+
+.order-inproduction {
+	border: 4px solid #ef6c00 !important;
+}
+
+.order-complete {
+	border: 4px solid #4caf50 !important;
+}
+
+/* Section headings that group main-tile items by production state - same
+   color language as the matching pill badges (production-tag /
+   production-tag-complete) so a section is instantly recognizable. Same
+   self-contained banner shape as .transfernotice (flex-centered, solid
+   background, no separate row/label wrapper) for a consistent look, just
+   with their own colors. */
+.sectionheading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	box-sizing: border-box;
+	color: white;
+	font-weight: bold;
+	font-size: 90%;
+	text-align: center;
+	padding: 6px 8px;
+	margin: 4px 0;
+	border-radius: 4px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.sectionheading-notproduced {
+	background-color: #607d8b;
+}
+
+.sectionheading-inprod {
+	background-color: #ef6c00;
+}
+
+.sectionheading-complete {
+	background-color: #4caf50;
+}
+
+.sectionheading-senttotable {
+	background-color: #1565c0;
+}
+
+/* Per-order not-produced/in-production/complete counts on the main board
+   tile itself (see HTML_GENERATE_ORDER/HTML_GENERATE_ORDER_ITEMS) - same
+   colors as .sectionheading-* above so this reads as the same status
+   language as the dialog's own IN PRODUCTION/COMPLETED sections and the
+   kitchen summary panel, just condensed to fit a 300px-wide tile header. */
+.tile-status-counts {
+	display: flex;
+	gap: 4px;
+	margin: 6px 0 0;
+}
+
+.tile-status-pill {
+	flex: 1 1 0;
+	min-width: 0;
+	text-align: center;
+	color: white;
+	font-weight: bold;
+	font-size: 10px;
+	letter-spacing: 0.02em;
+	padding: 3px 2px;
+	border-radius: 4px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tile-status-pill-notproduced {
+	background-color: #607d8b;
+}
+
+.tile-status-pill-inprod {
+	background-color: #ef6c00;
+}
+
+.tile-status-pill-complete {
+	background-color: #4caf50;
+}
+
+/* Wraps the heading + its items so the whole IN PRODUCTION / COMPLETED
+   section reads as one distinct bordered block on the ticket, not just a
+   colored label floating above plain rows. */
+.sectiongroup {
+	border-radius: 8px;
+	box-sizing: border-box;
+	padding: 10px;
+	margin: 10px 0 16px;
+}
+
+.sectiongroup-inprod {
+	border: 5px solid #ef6c00;
+}
+
+.sectiongroup-complete {
+	border: 5px solid #4caf50;
+}
+
+.sectiongroup-senttotable {
+	border: 5px solid #1565c0;
+}
+
+/* Appears on a COMPLETE item's own row once its whole order is done (see
+   HTML_GENERATE_MAINITEM_LINE) - tapping it moves the item down into its
+   own SENT TO TABLE section instead of leaving it in COMPLETED. */
+.send-to-table-btn {
+	margin-left: 8px;
+	padding: 4px 10px;
+	border: none;
+	border-radius: 4px;
+	background-color: #1565c0;
+	color: white;
+	font-weight: bold;
+	font-size: 85%;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	cursor: pointer;
+	min-height: 32px;
+	touch-action: manipulation;
+}
+.send-to-table-btn:hover {
+	background-color: #0d47a1;
+}
+
+.sectiondivider {
+	border: none;
+	border-top: 2px solid #9e9e9e;
+	margin: 12px 0;
+}
+
+.tenpercent {
+	border: none;
+	width: 10%;
+	float: left;
+	padding: 2px;
+}
+
+.twentypercent {
+	border: none;
+	width: 20%;
+	float: left;
+	padding: 2px;
+	text-transform: uppercase;
+}
+
+.ninetypercent {
+	border: none;
+	float: left;
+	text-transform: uppercase;
+	width: 90%;
+	padding: 2px;
+}
+
+.eightypercent {
+	border: none;
+	float: left;
+	text-transform: uppercase;
+	width: 80%;
+	padding: 2px;
+}
+
+.seventypercent {
+	border: none;
+	float: left;
+	text-transform: uppercase;
+	width: 70%;
+	padding: 2px;
+}
+
+/* Board layout: tiles fill top-to-bottom in a column until they hit
+   #cardss's own height, then wrap into a new column to the right - flexbox
+   column-wrap, not CSS multi-column (which balances height across a FIXED
+   set of columns sized to the viewport width, so more orders just make
+   existing columns taller and force the whole PAGE to scroll vertically -
+   the opposite of what a busy board needs: staff should scan left-to-right
+   for more orders, not lose track of how far down the page they are).
+   #cardss gets an explicit height (viewport minus the fixed 60px footer)
+   specifically so that wrap point exists at all, and overflow-x:auto/
+   overflow-y:hidden turns "more orders than fit" into a horizontal
+   scrollbar instead of a vertical one. Tiles' own max-height (below) has to
+   stay comfortably under this height or nothing would ever wrap. */
+#cardss {
+	display: flex;
+	flex-flow: column wrap;
+	align-content: flex-start;
+	height: calc(100vh - 60px);
+	overflow-x: auto;
+	overflow-y: hidden;
+	gap: 10px;
+	padding: 10px;
+	box-sizing: border-box;
+}
+
+/* #cardss's actual direct flex-item child is .yesyesyes, not .cardwrapper -
+   HTML_GENERATE_ORDER wraps each tile in an outer, otherwise-unstyled div
+   by that name (kept around from the old float-based layout). Pinning its
+   size here explicitly, rather than relying on it merely inheriting
+   .cardwrapper's own 300px/max-height through ordinary block auto-sizing
+   (which is what actually happens today, since align-items' default
+   stretch plus every tile sharing the same content width settles the
+   column-wrap math out correctly anyway) - explicit is one less thing to
+   silently break later, e.g. if .yesyesyes ever gains its own padding or
+   border. */
+#cardss > .yesyesyes {
+	width: 300px;
+	flex: 0 0 auto;
+}
+
+/* Caps how tall a single order tile is allowed to get - tune
+   --tile-max-height to taste (this is the "how big is one order tile"
+   knob). A tile with more items than fit scrolls internally
+   (.mainitems_wrapper below) instead of growing past this, which is what
+   makes the column-wrap above actually wrap instead of one huge order
+   claiming an entire column by itself. */
+#cardss .cardwrapper {
+	--tile-max-height: 560px;
+	/* Fixed Tile Size (KDS Config) uses its own, smaller height rather than
+	   reusing --tile-max-height above - that cap is sized for the tallest
+	   an auto-growing tile is allowed to get before it scrolls, which
+	   leaves a lot of dead blank space below a short order once every tile
+	   is forced to that same height. This is tuned instead for a more
+	   typical order's worth of items showing without scrolling, so a short
+	   order doesn't leave most of its own tile empty. */
+	--tile-fixed-height: 380px;
+	max-height: var(--tile-max-height);
+	overflow: hidden;
+	/* fixed-tile-size (KDS Config -> Fixed Tile Size) below turns this cap
+	   into an actual fixed height, so every tile takes the same footprint
+	   on the board regardless of how few items it has - a short order's
+	   tile no longer shrinks to fit, it just leaves the rest of its own
+	   height blank the same way a long order already scrolls internally
+	   within it. */
+	width: 300px;
+	margin-right: 0;
+	margin-bottom: 0;
+	display: flex;
+	flex-direction: column;
+	/* No longer needed to keep #cardss's own layout from splitting a tile
+	   (that was CSS multi-column's doing, not flexbox's - flex items are
+	   never split across the wrap the way column-flow content could be),
+	   but .yesyesyes (this element's own parent, see #cardss > .yesyesyes
+	   above) can still have .multicolumnitem/.multicolumnitem3 added to it
+	   directly (large-order item-count styling, gated behind the
+	   "enablemulticolumn" config flag) - without this, that ancestor
+	   column-count would be free to physically split THIS card's own
+	   content (header, timer, everything) across 2-3 columns instead of
+	   just the item list it's actually meant for. */
+	break-inside: avoid;
+}
+#cardss .cardwrapper.fixed-tile-size {
+	/* Overrides --tile-fixed-height's own 380px default (tuned for a more
+	   typical column-wrap board) with exactly enough height to fit
+	   --tile-fixed-rows tiles per column (KDS Config -> Fixed Tile Rows,
+	   set in KDS.init - falls back to 2 here too, matching what Fixed Tile
+	   Size always did before this became adjustable, in case this rule
+	   somehow renders before that JS has run). Filling #cardss's own height
+	   (100vh - 60px footer) given its 10px top+bottom padding and a 10px
+	   gap between every pair of stacked tiles - (rows - 1) of them, not a
+	   single fixed one, so this stays correct how ever many rows are
+	   configured: (100vh - 60px - 20px - (rows - 1) * 10px) / rows. Every
+	   fixed-size tile ends up noticeably bigger than the 380px default
+	   (easier to read from across the kitchen) while the board still
+	   settles into a clean N-tiles-tall grid rather than an arbitrary
+	   number that happens to fit at 380px. */
+	--tile-fixed-height-multi-row: calc((100vh - 80px - (var(--tile-fixed-rows, 2) - 1) * 10px) / var(--tile-fixed-rows, 2));
+	height: var(--tile-fixed-height-multi-row);
+	max-height: var(--tile-fixed-height-multi-row);
+}
+#cardss .cardwrapper > div {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: 0;
+	box-sizing: border-box;
+}
+
+/* Lets staff collapse a tile down to just its header (check/table/
+   waiter/timer) on a busy board without losing track of it, and expand
+   individual orders back out only when they actually need the full item
+   list - manual, per-tile control over how much of the screen a given
+   order takes up, rather than everything always being fully expanded.
+   Full-width bar (same visual language as .sectionheading) rather than a
+   small corner icon, so the label itself ("Collapse Order"/"Expand
+   Order", kept in sync by KDS.toggleTileCollapse) says what tapping it
+   does instead of relying on a chevron glyph - also big enough to tap
+   reliably on a touch screen without needing a separate size override. */
+.tile-collapse-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 6px 0 0;
+	padding: 6px 8px;
+	border-radius: 4px;
+	background-color: rgba(0, 0, 0, 0.08);
+	color: #555;
+	font-weight: bold;
+	font-size: 90%;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+.tile-collapse-toggle:hover {
+	background-color: rgba(0, 0, 0, 0.16);
+}
+/* Replaces .tile-collapse-toggle entirely when Fixed Tile Size is on (see
+   HTML_GENERATE_ORDER) - a fixed-size tile always takes the same board
+   footprint whether or not it's collapsed, so collapsing loses its main
+   purpose; a running "N items on ticket" count is more useful there
+   instead. Same bar shape/visual language as the toggle it replaces, just
+   not clickable. */
+.tile-item-counter {
+	cursor: default;
+}
+.tile-item-counter:hover {
+	background-color: rgba(0, 0, 0, 0.08);
+}
+/* Flex column so its own child .mainitems_wrapper's flex:1 1 auto/
+   overflow-y:auto (see wimpy.css) actually has somewhere to claim - without
+   this, .tile-collapsible-body stays a plain block and the item list just
+   grows the tile past --tile-max-height instead of scrolling internally.
+   flex:1 1 auto/min-height:0 here mirror the same pattern one level up (in
+   #cardss .cardwrapper > div), so this body expands to fill whatever
+   height is left under the tile's header/tilecounts/collapse-toggle. */
+.tile-collapsible-body {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+.cardwrapper.tile-collapsed .tile-collapsible-body {
+	display: none;
+}
+
+.card-body {
+	padding: 0.5rem;
+}
+
+#summary {
+	height: 100%;
+    width: 0px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    background-color: #cecece;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 30px;
+	padding-left:0px;
+	color: black;
+}
+.sumentry{
+	text-transform: uppercase;
+	background-color: yellow;	
+	font-weight: bold;
+	font-size: 18px;
+	color: black;
+}
+.subentry{
+	text-transform: uppercase;
+	background-color:white;
+	font-weight: bold;
+	font-size: 18px;
+	color: black;
+}

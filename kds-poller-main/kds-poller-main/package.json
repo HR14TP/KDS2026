@@ -1,0 +1,23 @@
+{
+  "name": "kds-poller-service",
+  "version": "1.0.0",
+  "description": "KDS Poller Service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/kds1/kds-poller-service.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/kds1/kds-poller-service/issues"
+  },
+  "homepage": "https://gitlab.com/kds1/kds-poller-service#readme",
+  "dependencies": {
+    "aws-sdk": "^2.721.0",
+    "dotenv": "^8.2.0"
+  }
+}

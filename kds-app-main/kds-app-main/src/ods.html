@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <title>KDS - Order Display</title>
+
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/ods.css" rel="stylesheet">
+    <script type="text/javascript" src="js/frontend/ods.js"></script>
+  </head>
+
+  <body class="ods-body" onload="odsapp.initialize();" oncontextmenu="return false;" onselectstart="return false" ondragstart="return false;">
+    <div class="ods-header">
+      <h1>Order Status</h1>
+      <div class="ods-header-right">
+        <span id="ods_clock" class="ods-clock">--:--</span>
+        <span id="ods_connection_status" class="ods-status-disconnected">DISCONNECTED</span>
+        <button class="ods-config-link" onclick="window.location = 'clientconfig.html';">CONFIG</button>
+      </div>
+    </div>
+
+    <div class="ods-ready-band">
+      <div class="ods-ready-band-head">
+        <span class="ods-ready-band-title">Ready for Collection<span id="ods_completed_count" class="ods-count">0</span></span>
+        <button class="ods-clear-all-button" onclick="odsapp.clearAllCompleted()">CLEAR ALL</button>
+      </div>
+      <div id="ods_completed" class="ods-ready-row">
+        <div class="ods-empty ods-empty-band">No orders ready yet</div>
+      </div>
+    </div>
+
+    <div class="ods-work-area">
+      <div class="ods-panel ods-panel-inproduction">
+        <div class="ods-panel-title">
+          <span class="ods-panel-title-text">In Production<span id="ods_inproduction_count" class="ods-count">0</span></span>
+        </div>
+        <div id="ods_inproduction" class="ods-grid">
+          <div class="ods-empty">Nothing in production</div>
+        </div>
+      </div>
+      <div class="ods-panel ods-panel-partial">
+        <div class="ods-panel-title">
+          <span class="ods-panel-title-text">Partially Ready<span id="ods_partial_count" class="ods-count">0</span></span>
+        </div>
+        <div id="ods_partial" class="ods-grid">
+          <div class="ods-empty">Nothing partially ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ods_modal_overlay" class="ods-modal-overlay" onclick="if (event.target === this) { odsapp.hideSummary(); }">
+      <div id="ods_modal_content" class="ods-modal"></div>
+    </div>
+  </body>
+</html>

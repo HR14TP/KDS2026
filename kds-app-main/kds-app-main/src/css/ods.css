@@ -1,0 +1,622 @@
+/* Order Display Screen - customer-facing "order ready" board.
+   Same visual language as the kitchen board (wimpy.css): black ground,
+   rounded off-white ticket cards, the same orange/green/blue status colors.
+   Layout is deliberately NOT three equal columns: the numbers a customer is
+   actually scanning for (Ready for Collection) get a dedicated, prominent
+   band across the top; kitchen-progress detail (still cooking / partially
+   ready) is secondary and lives in a working area underneath. */
+
+* {
+	box-sizing: border-box;
+}
+
+body.ods-body {
+	background-color: #0b0b0b !important;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+	width: 100%;
+	height: 100vh;
+	max-width: none;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	-webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation-duration: 0.001ms !important;
+		transition-duration: 0.001ms !important;
+	}
+}
+
+/* ---------------------------- Header ---------------------------- */
+
+.ods-header {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 28px;
+	background-color: #1a1a1a;
+	border-bottom: 1px solid #2c2c2c;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+	z-index: 1;
+}
+
+.ods-header h1 {
+	color: #f6f0ef;
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	margin: 0;
+}
+
+.ods-header-right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.ods-clock {
+	font-variant-numeric: tabular-nums;
+	font-size: 15px;
+	font-weight: 700;
+	color: #e8e2da;
+	letter-spacing: 0.03em;
+}
+
+#ods_connection_status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	padding: 6px 14px 6px 10px;
+	border-radius: 100px;
+	background-color: #2a2a2a;
+	color: #cfd8dc;
+}
+
+#ods_connection_status::before {
+	content: '';
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background-color: #757575;
+	flex-shrink: 0;
+}
+
+.ods-status-connected::before {
+	background-color: #4caf50;
+	box-shadow: 0 0 6px #4caf50;
+}
+
+.ods-status-disconnected::before {
+	background-color: #d32f2f;
+	box-shadow: 0 0 6px #d32f2f;
+}
+
+.ods-config-link {
+	color: #cfd8dc;
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	border: 1px solid #3a3a3a;
+	border-radius: 8px;
+	padding: 7px 16px;
+	cursor: pointer;
+	background: none;
+	transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.ods-config-link:hover {
+	background-color: #262626;
+	border-color: #4a4a4a;
+}
+
+/* ---------------------------- Ready band ---------------------------- */
+/* The whole reason this screen exists. Deliberately the visually loudest
+   thing on screen - a customer walking up should find their number here
+   without having to parse anything else. */
+
+.ods-ready-band {
+	flex: 0 1 auto;
+	max-height: 40vh;
+	display: flex;
+	flex-direction: column;
+	padding: 18px 28px 20px;
+	background: linear-gradient(180deg, rgba(76, 175, 80, 0.14), rgba(76, 175, 80, 0.03) 70%, transparent);
+	border-bottom: 1px solid #232323;
+	min-height: 0;
+}
+
+.ods-ready-band-head {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.ods-ready-band-title {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: #f6f0ef;
+	font-size: 17px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	border-left: 4px solid #4caf50;
+	padding-left: 12px;
+}
+
+.ods-ready-row {
+	overflow-y: auto;
+	overflow-x: hidden;
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	gap: 16px;
+	min-height: 0;
+}
+
+.ods-ready-tile {
+	position: relative;
+	background-color: #f6f0ef;
+	border-radius: 14px;
+	width: 148px;
+	padding: 18px 10px 14px;
+	text-align: center;
+	box-shadow: 0 5px 16px rgba(0, 0, 0, 0.5);
+	border-top: 6px solid #4caf50;
+	cursor: pointer;
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.ods-ready-tile:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
+.ods-ready-number {
+	font-size: 46px;
+	font-weight: 800;
+	color: #1c1c1c;
+	line-height: 1;
+	margin-bottom: 8px;
+	font-variant-numeric: tabular-nums;
+}
+
+.ods-ready-age {
+	font-size: 11px;
+	font-weight: 600;
+	color: #7a7268;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.ods-ready-clear {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: none;
+	background-color: rgba(0, 0, 0, 0.08);
+	color: #6b6b6b;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.ods-ready-clear:hover {
+	background-color: rgba(0, 0, 0, 0.16);
+	color: #1c1c1c;
+}
+
+@keyframes ods-pop-in {
+	0% { transform: scale(0.82); opacity: 0; }
+	65% { transform: scale(1.05); opacity: 1; }
+	100% { transform: scale(1); opacity: 1; }
+}
+
+.ods-ready-new {
+	animation: ods-pop-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+	box-shadow: 0 0 0 3px #4caf50, 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+.ods-empty-band {
+	padding: 14px 2px;
+	font-size: 15px;
+}
+
+/* ---------------------------- Work area (In Production / Partially Ready) ---------------------------- */
+
+.ods-work-area {
+	flex: 1 1 auto;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	min-height: 0;
+}
+
+.ods-panel {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	padding: 16px 22px 18px;
+	border-left: 1px solid #1e1e1e;
+}
+
+.ods-panel:first-child {
+	border-left: none;
+}
+
+.ods-panel-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-shrink: 0;
+	margin-bottom: 12px;
+}
+
+.ods-panel-title-text {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: #b8afa4;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.ods-panel-inproduction .ods-panel-title-text {
+	border-left: 3px solid #757575;
+	padding-left: 9px;
+}
+
+.ods-panel-partial .ods-panel-title-text {
+	border-left: 3px solid #1565c0;
+	padding-left: 9px;
+}
+
+.ods-count {
+	background-color: #232323;
+	color: #8f8578;
+	border-radius: 100px;
+	min-width: 20px;
+	text-align: center;
+	padding: 1px 8px;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+}
+
+.ods-ready-band-title .ods-count {
+	background-color: rgba(76, 175, 80, 0.22);
+	color: #a5d6a7;
+}
+
+.ods-clear-all-button {
+	background-color: #2a2a2a;
+	color: #cfd8dc;
+	border: 1px solid #3a3a3a;
+	border-radius: 8px;
+	padding: 7px 14px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.ods-clear-all-button:hover {
+	background-color: #383838;
+}
+
+.ods-grid {
+	overflow-y: auto;
+	overflow-x: hidden;
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	gap: 12px;
+	min-height: 0;
+	padding-bottom: 8px;
+}
+
+.ods-empty {
+	color: #4d4d4d;
+	font-size: 13px;
+	font-weight: 500;
+	letter-spacing: 0.03em;
+	padding: 8px 2px;
+}
+
+.ods-tile {
+	position: relative;
+	background-color: #f6f0ef;
+	border-radius: 10px;
+	width: 210px;
+	padding: 11px 13px 10px;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+	border-top: 4px solid #9e9e9e;
+}
+
+.ods-tile-dismiss {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: none;
+	background-color: rgba(0, 0, 0, 0.06);
+	color: #8a8177;
+	font-size: 14px;
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.ods-tile-dismiss:hover {
+	background-color: rgba(0, 0, 0, 0.14);
+	color: #1c1c1c;
+}
+
+.ods-tile-queued {
+	border-top-color: #9e9e9e;
+}
+
+.ods-tile-cooking {
+	border-top-color: #ef6c00;
+}
+
+.ods-tile-partial {
+	border-top-color: #1565c0;
+}
+
+.ods-tile-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 6px;
+	/* Leaves room for the absolutely-positioned dismiss (x) button in the
+	   corner so it doesn't sit on top of the badge/progress pill. */
+	padding-right: 20px;
+}
+
+.ods-tile-number {
+	font-size: 21px;
+	font-weight: 700;
+	color: #1c1c1c;
+	letter-spacing: 0.02em;
+	font-variant-numeric: tabular-nums;
+}
+
+.ods-tile-badge {
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	padding: 3px 8px;
+	border-radius: 100px;
+	color: white;
+	flex-shrink: 0;
+}
+
+.ods-tile-badge-cooking {
+	background-color: #ef6c00;
+}
+
+.ods-tile-badge-queued {
+	background-color: #9e9e9e;
+}
+
+.ods-tile-progress {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: #1565c0;
+	font-variant-numeric: tabular-nums;
+}
+
+.ods-tile-progress-track {
+	height: 4px;
+	border-radius: 100px;
+	background-color: #e2dad6;
+	overflow: hidden;
+	margin-bottom: 8px;
+}
+
+.ods-tile-progress-fill {
+	height: 100%;
+	background-color: #1565c0;
+	border-radius: 100px;
+	transition: width 0.2s ease;
+}
+
+.ods-tile-items {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid #e9e2de;
+	margin-bottom: 6px;
+}
+
+.ods-item {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	font-size: 12.5px;
+	color: #4a4a4a;
+	line-height: 1.35;
+}
+
+.ods-item-mark {
+	flex-shrink: 0;
+	font-size: 8px;
+	color: #b3aaa0;
+	line-height: 1.7;
+}
+
+.ods-item-sent {
+	color: #2e7d32;
+	font-weight: 600;
+}
+
+.ods-item-sent .ods-item-mark {
+	color: #2e7d32;
+	font-size: 11px;
+}
+
+.ods-tile-age {
+	font-size: 10px;
+	font-weight: 600;
+	color: #9a9088;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* ---------------------------- Order summary modal ---------------------------- */
+
+.ods-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(0, 0, 0, 0.6);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 100;
+}
+
+.ods-modal-overlay.ods-modal-open {
+	display: flex;
+}
+
+.ods-modal {
+	background-color: #f6f0ef;
+	border-radius: 14px;
+	width: 340px;
+	max-width: calc(100vw - 40px);
+	max-height: calc(100vh - 80px);
+	overflow-y: auto;
+	padding: 20px 22px 22px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.ods-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-bottom: 2px solid #e2dad6;
+	padding-bottom: 12px;
+	margin-bottom: 12px;
+}
+
+.ods-modal-number {
+	font-size: 26px;
+	font-weight: 700;
+	color: #1c1c1c;
+}
+
+.ods-modal-close {
+	background: none;
+	border: none;
+	font-size: 26px;
+	line-height: 1;
+	color: #8a8a8a;
+	cursor: pointer;
+	padding: 0 4px;
+}
+
+.ods-modal-close:hover {
+	color: #1c1c1c;
+}
+
+.ods-modal-sub {
+	font-size: 13px;
+	color: #6b6b6b;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 12px;
+}
+
+.ods-modal-items {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 18px;
+}
+
+.ods-modal-item {
+	font-size: 15px;
+	color: #2c2c2c;
+	padding: 6px 0;
+	border-bottom: 1px solid #eee5e1;
+}
+
+.ods-modal-item:last-child {
+	border-bottom: none;
+}
+
+.ods-modal-clear-button {
+	width: 100%;
+	background-color: #4caf50;
+	color: white;
+	border: none;
+	border-radius: 10px;
+	padding: 12px 0;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+}
+
+.ods-modal-clear-button:hover {
+	background-color: #43a047;
+}
+
+/* ---------------------------- Responsive ---------------------------- */
+
+@media (max-width: 900px) {
+	.ods-work-area {
+		grid-template-columns: 1fr;
+		overflow-y: auto;
+	}
+	.ods-panel {
+		border-left: none;
+		border-top: 1px solid #1e1e1e;
+	}
+	.ods-panel:first-child {
+		border-top: none;
+	}
+}
+
+@media (max-width: 560px) {
+	.ods-header h1 {
+		font-size: 15px;
+	}
+	.ods-ready-number {
+		font-size: 36px;
+	}
+	.ods-ready-tile {
+		width: 120px;
+	}
+}

@@ -1,0 +1,38 @@
+package endpoints
+
+const KDSAdminUser = "/kds/user"
+const KDSAdminRegister = "/kds/register"
+const KDSAdminLogin = "/kds/login"
+const KDSAdminKDSAccount = "/kds/account"
+const KDSAdminKDSSendSystemMessage = "/kds/system/message"
+const KDSAdminKDSTerminal = "/kds/terminal"
+
+const KDSTerminalRegister = "/kds/terminal/register"
+const KDSTerminalConfig = "/kds/terminal/config"
+const KDSTerminalMessage = "/kds/terminal/message"
+const KDSTerminalRequests = "/kds/terminal/request"
+const KDSTerminalSerialRequests = "/kds/serial/request"
+
+const KDSAdminKDSTerminalRegister = "/kds/terminal/register"
+const KDSAdminKDSTerminalConfig = "/kds/terminal/config"
+const KDSAdminUserAccounts = "/kds/user/accounts"
+const KDSAdminReports = "/kds/report"
+const KDSAdminReportsAccount = "/kds/report/account"
+const KDSAdminReportsTerminal = "/kds/report/terminal"
+const KDSAdminReportsAccountData = "/kds/report/account/data"
+const KDSAdminReportsTerminalData = "/kds/report/terminal/data"
+
+const KDSApiDailyData = "/kds/daily"
+const KDSApiApplicationConfig = "/kds/application/config"
+const KDSApiDataRange = "/kds/api/data/range"
+const KDSApiUserPermissions = "/kds/user/permissions"
+const KDSApiPermissions = "/kds/permissions"
+const KDSApiUsers = "/kds/users"
+const KDSApiUserTypes = "/kds/usertypes"
+const KDSApiTerminalRegister = "/kds/terminal/register"
+const KDSApiTerminalConfig = "/kds/terminal/config"
+const KDSApiTerminalMessage = "/kds/terminal/message"
+const KDSApiTerminalRequests = "/kds/terminal/request"
+
+const KDSApiTerminalConfigV2 = "/kds/terminal/config/v2"
+const KDSApiAccountConfigV2 = "/kds/account/config/v2"

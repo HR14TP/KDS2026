@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>KDS LOADING</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/config.css" rel="stylesheet">
+    <style>
+      /* Inline: this page has no dedicated stylesheet file of its own, and
+         nothing else on it needs these rules. */
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+      .bootwrap {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        box-sizing: border-box;
+        padding: 40px;
+        gap: 20px;
+      }
+      .bootlogo {
+        font-size: 22px;
+        font-weight: bold;
+        color: #263238;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .bootlabel {
+        font-weight: bold;
+        font-size: 16px;
+        color: #333;
+        min-height: 22px;
+        text-align: center;
+      }
+      .bootbar-track {
+        width: 100%;
+        max-width: 640px;
+        height: 22px;
+        background-color: #e0e0e0;
+        border-radius: 11px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+        flex-shrink: 0;
+      }
+      .bootbar-fill {
+        height: 100%;
+        width: 0%;
+        background-color: #2196f3;
+        transition: width 0.25s ease-out;
+        border-radius: 11px;
+      }
+      .bootpercent {
+        font-size: 13px;
+        color: #757575;
+      }
+      /* The task log - a CLI/terminal-styled panel on the loading screen
+         itself (rather than a separate OS window) since this app runs as
+         a fullscreen always-on-top kiosk window - a second real window
+         would either be hidden behind it or fight it for focus. */
+      .bootcli {
+        width: 100%;
+        max-width: 640px;
+        height: 200px;
+        background-color: #1b1b1b;
+        color: #7cfc00;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow-y: auto;
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+        box-sizing: border-box;
+      }
+      .bootcli div {
+        white-space: pre-wrap;
+        line-height: 1.6;
+      }
+      .bootcli .bootline-ts {
+        color: #4caf50;
+      }
+    </style>
+  </head>
+
+  <body oncontextmenu="return false;" onselectstart="return false" ondragstart="return false;">
+    <div class="bootwrap">
+      <div class="bootlogo">KDS STARTING UP</div>
+      <strong id="statusfield" class="bootlabel">Loading, please wait...</strong>
+      <div class="bootbar-track">
+        <div class="bootbar-fill" id="bootbarfill"></div>
+      </div>
+      <div class="bootpercent" id="bootpercent">0%</div>
+      <div class="bootcli" id="bootcli"></div>
+    </div>
+    <script>
+      // nodeIntegration is enabled + contextIsolation disabled for this
+      // window (see index.js's BrowserWindow webPreferences), so this can
+      // require electron directly rather than going through preload.js.
+      const { ipcRenderer } = require('electron');
+
+      const fillEl = document.getElementById('bootbarfill');
+      const labelEl = document.getElementById('statusfield');
+      const percentEl = document.getElementById('bootpercent');
+      const cliEl = document.getElementById('bootcli');
+      let lastLoggedLabel = '';
+
+      ipcRenderer.on('boot-progress', (event, data) => {
+        const percent = Math.max(0, Math.min(100, Math.round(data.percent)));
+        if (fillEl) {
+          fillEl.style.width = percent + '%';
+        }
+        if (percentEl) {
+          percentEl.textContent = percent + '%';
+        }
+        if (labelEl && data.label) {
+          labelEl.textContent = data.label;
+        }
+        // Every distinct status becomes one line in the task log below -
+        // rapid byte-progress updates during a download share the same
+        // label prefix, so only the label actually changing adds a new
+        // line instead of flooding the log every few KB.
+        if (cliEl && data.label && data.label !== lastLoggedLabel) {
+          lastLoggedLabel = data.label;
+          const line = document.createElement('div');
+          const ts = new Date().toLocaleTimeString();
+          line.innerHTML = '<span class="bootline-ts">[' + ts + ']</span> ' + data.label;
+          cliEl.appendChild(line);
+          cliEl.scrollTop = cliEl.scrollHeight;
+        }
+      });
+    </script>
+  </body>
+</html>

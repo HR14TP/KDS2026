@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>KDS DOWNLOAD</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="css/normalize.css" rel="stylesheet">
+    <link href="css/milligram.min.css" rel="stylesheet">
+    <link href="css/site.css" rel="stylesheet">
+    <link href="css/config.css" rel="stylesheet">
+    <script type="text/javascript" src="js/frontend/frontend.js"></script>
+    <script type="text/javascript" src="js/frontend/pagedownloads.js"></script>
+  </head>
+  
+  <body oncontextmenu="return false;" onselectstart="return false" onload="frontend._ipcFront.downloadPage.init()" ondragstart="return false;">
+
+    <div style="background:white;" class="container">  
+         
+        <a class="button" onclick="pageDownloads.func.closeModal()">CLOSE</a> 
+        <div class="row">            
+          <div style="padding:0px; margin:0px;" class="column">
+              <p>updates is downloading... please be patient</p>                                
+          </div>
+      </div>    
+        <div class="row">            
+            <div style="padding:0px; margin:0px;" class="column">
+                <h6>KDS WEBSERVER</h6>                
+                <div style="height:50px; border:1px solid black; line-height:50px; text-align: center; background-color:#cefefe; width:0%;" id="kdsweb_download">
+                0
+                </div>
+                <hr />
+                <h6>KDS TCP SERVER</h6>                
+                <div style="height:50px; border:1px solid black; line-height:50px; text-align: center; background-color:#cefefe; width:0%;" id="kdstcpserver_download">
+                0
+                </div>
+                <hr />
+                <h6>KDS POLLER SERVICE</h6>                
+                <div style="height:50px; border:1px solid black; line-height:50px; text-align: center; background-color:#cefefe; width:0%;" id="kdspoller_download">
+                0
+                </div>                                
+            </div>
+        </div>        
+    </div>
+  </body>

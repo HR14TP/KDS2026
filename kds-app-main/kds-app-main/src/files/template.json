@@ -1,0 +1,88 @@
+{
+    "server": {
+        "host": "127.0.0.1",
+        "port": "9100",
+        "location": "../files/",
+        "serial": "1234"
+    },
+    "database": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "root",
+        "password": "kds",
+        "schema": "kds"
+    },
+    "webserver": {
+        "host": "127.0.0.1",
+        "port": 2020
+    },
+    "timers": {
+        "drinks": {
+            "time": [
+                2,
+                4
+            ],
+            "color": [
+                "yellow",
+                "red"
+            ]
+        },
+        "grill": {
+            "time": [
+                8,
+                0
+            ],
+            "color": [
+                "yellow",
+                "red"
+            ]
+        }
+    },
+    "client": {
+        "screen": "kds",
+        "terminal": "grill",
+        "name": "kds",
+        "css": "wimpy.css",
+        "serial": "123456789"
+    },
+    "communication": {
+        "sms" : {
+            "enabled" : false,
+            "twilio" : {
+                "ACCOUNT_SID" : "",
+                "AUTH_TOKEN" : "",
+                "SENDING_NUMBER" : ""
+            }
+        }
+    },
+    "bumpbars" : {        
+        "mapping" : {
+            "enabled" : false, 
+            "KEY_CLOSE_ORDER" : {
+                "KEY" : "",
+                "SHIFT" : false,
+                "CONTROL" : false,
+                "ALT" : false
+            }
+        }
+    },
+    "flags": {
+        "compressed": false,
+        "showheadings": true,
+        "leftalign": false,
+        "checkboxes": false,
+        "passmode": false,
+        "odsmode": false
+    },
+    "colors": {
+        "mainitem": "#ffff00",
+        "subitem": "#ffffff",
+        "late1": "yellow",
+        "late2": "#ff0000"
+    },
+    "sound": {
+        "updateOrder" : {
+            "enabled" : false
+        }
+    }
+}

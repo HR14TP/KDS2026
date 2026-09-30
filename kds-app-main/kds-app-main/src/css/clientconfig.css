@@ -1,0 +1,810 @@
+/* Shared stylesheet for the redesigned settings-style pages - currently
+   clientconfig.html, register.html, and admin.html. Deliberately not
+   folded into config.css, which also loads on config.html/downloads.html/
+   loading.html/startup.html, which must stay visually untouched by this
+   redesign. Everything here is scoped under body.settings-app so it can
+   never leak even if this file were linked from one of those by mistake. */
+
+/* Milligram sets html{font-size:62.5%} (a 1rem=10px trick) - every size
+   below is written in px specifically to stay immune to that, rather than
+   quietly ending up at 62.5% of the intended size like the first pass of
+   this stylesheet did. */
+body.settings-app {
+	background-color: #eef1f5 !important;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica Neue, Helvetica, Arial, sans-serif;
+	color: #1f2937;
+	font-size: 16px;
+	height: 100vh;
+	width: 100vw;
+	max-width: 100vw;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+}
+
+.settings-app .settings-header {
+	background-color: #1f2937;
+	color: white;
+	padding: 20px 28px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+	justify-content: space-between;
+	box-sizing: border-box;
+}
+
+.settings-app .settings-header h1 {
+	font-size: 22px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	margin: 0;
+	text-transform: uppercase;
+}
+
+.settings-app .settings-header .settings-header-sub {
+	font-size: 14px;
+	color: #9ca3af;
+	margin-top: 4px;
+}
+
+/* ==================== TAB NAVIGATION ==================== */
+
+/* Segmented-control style tab bar - a filled pill for the active section
+   reads as a clear, deliberate "you are here" the way a plain colored
+   underline on floating text doesn't, and it holds up better once tabs
+   wrap to a second line on a narrower window. */
+.settings-app .settings-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	background-color: #f1f5f9;
+	padding: 14px 24px;
+	border-bottom: 1px solid #e2e8f0;
+	position: sticky;
+	top: 0;
+	z-index: 5;
+}
+
+.settings-app .settings-tab-btn {
+	appearance: none;
+	background-color: transparent;
+	border: none;
+	border-radius: 8px;
+	color: #64748b;
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	padding: 10px 18px;
+	cursor: pointer;
+	transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1.3;
+}
+
+.settings-app .settings-tab-btn:hover {
+	background-color: #e2e8f0;
+	color: #1f2937;
+}
+
+.settings-app .settings-tab-btn.active {
+	background-color: #2563eb;
+	color: white;
+	box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+}
+
+.settings-app .settings-tab-btn.active:hover {
+	background-color: #1d4ed8;
+}
+
+/* ==================== PANELS ==================== */
+
+/* Tetris/masonry cascade: CSS multi-column instead of grid, so a short
+   card (Client Setup) doesn't leave a dead gap under itself just because
+   a tall sibling (Board Behavior) set that row's height - the next card
+   in source order flows straight up into whichever column has the least
+   height so far, the same way a Pinterest board packs. column-width is a
+   *hint* the browser balances against available space (like grid's
+   auto-fit/minmax did), still collapsing to one column on a small screen
+   with no separate breakpoint needed. Some tabs (general/settings) wrap
+   their groups in a <form>; others put .settings-group directly under
+   .settings-tab-panel - this rule targets both so neither layout needs
+   its own copy. */
+.settings-app .settings-tab-panel,
+.settings-app .settings-tab-panel > form {
+	display: none;
+	columns: 380px;
+	column-gap: 20px;
+}
+
+.settings-app .settings-tab-panel {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 24px clamp(16px, 3vw, 40px) 60px;
+}
+
+.settings-app .settings-tab-panel.active {
+	display: block;
+}
+
+.settings-app .settings-tab-panel > form {
+	display: block;
+}
+
+.settings-app .settings-group {
+	width: 100%;
+	max-width: 760px;
+	background-color: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	overflow: hidden;
+	/* break-inside is what actually makes this a card-based cascade
+	   rather than plain multi-column text - without it a tall card could
+	   get sliced across two columns mid-content. display:inline-block +
+	   width:100% is the standard pairing that makes break-inside:avoid
+	   behave consistently. */
+	break-inside: avoid;
+	display: inline-block;
+	vertical-align: top;
+	margin: 0 0 20px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.05);
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+	/* Lets the text-field width rule below key off this card's own
+	   rendered width via @container, rather than the viewport's - the
+	   card can end up narrow either because the screen itself is small,
+	   or because the responsive columns above fit several side by side,
+	   and either case needs the same fix. */
+	container-type: inline-size;
+}
+
+.settings-app .settings-group:hover {
+	border-color: #cbd5e1;
+	box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05), 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+/* column-span:all breaks it out of the card cascade entirely, so it
+   always sits on its own full-width line below every card rather than
+   getting balanced into the column flow as if it were itself a card. */
+.settings-app .settings-actions {
+	column-span: all;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.settings-app .settings-group-header {
+	position: relative;
+	padding: 14px 20px;
+	border-bottom: 1px solid #e2e8f0;
+	background-color: #f8fafc;
+}
+
+/* Collapsible section tiles (clientconfig.html) - the chevron is
+   absolutely positioned rather than the header switching to flex, so the
+   existing h2/p block stack (and admin.html's own header, which already
+   has its own inline-flex layout for its Update button) don't need any
+   restructuring to make room for it. */
+.settings-app .settings-group-header.is-collapsible {
+	cursor: pointer;
+	user-select: none;
+	padding-right: 46px;
+}
+
+.settings-app .settings-group-header.is-collapsible:hover {
+	background-color: #f1f5f9;
+}
+
+.settings-app .settings-group-chevron {
+	position: absolute;
+	right: 18px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #94a3b8;
+	font-size: 12px;
+	line-height: 1;
+	transition: transform 0.15s ease;
+	pointer-events: none;
+}
+
+.settings-app .settings-group.collapsed .settings-group-chevron {
+	transform: translateY(-50%) rotate(-90deg);
+}
+
+.settings-app .settings-group.collapsed > *:not(.settings-group-header) {
+	display: none;
+}
+
+.settings-app .settings-group-header h2 {
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #64748b;
+	margin: 0;
+}
+
+.settings-app .settings-group-header p {
+	font-size: 13.5px;
+	color: #94a3b8;
+	margin: 5px 0 0;
+}
+
+/* Each individual setting: title+description on the left, the actual
+   control vertically centered on the right - the common "iOS/macOS
+   Settings" layout, far easier to scan than the old cramped
+   checkbox-then-label-then-small-print stacks. */
+.settings-app .setting-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px 20px;
+	padding: 16px 20px;
+	border-bottom: 1px solid #f1f5f9;
+	transition: background-color 0.1s ease;
+}
+
+/* Only rows holding a text field need to wrap (see
+   .setting-row-control-text's @container rule below) - a toggle switch
+   should always stay inline next to its shrinking label instead. Scoping
+   the wrap this way, rather than applying it to every row, sidesteps a
+   Chromium flexbox quirk: its wrap decision is made against each item's
+   pre-shrink hypothetical width, so a wrap-enabled row can push even a
+   44px switch onto its own line at a middling width where it would
+   actually have fit fine after the label text shrank. */
+.settings-app .setting-row:has(.setting-row-control-text) {
+	flex-wrap: wrap;
+}
+
+/* Item Highlight Colors' row list (.itemcolor-control) needs the same
+   wrap-onto-its-own-line treatment as a text field, for the same reason -
+   without it, the row's flex layout tries to fit the description text and
+   this control side by side on one line, and a control demanding ~400px
+   (see .itemcolor-control's own flex-basis) squeezes the description down
+   to a sliver instead of letting it use the row's full width above the
+   list. */
+.settings-app .setting-row:has(.itemcolor-control) {
+	flex-wrap: wrap;
+}
+.settings-app .itemcolor-control {
+	/* Unlike .setting-row-control-text (happy to sit inline next to its
+	   label until the row gets genuinely narrow), this control always
+	   takes the full row width on its own line below the label/description
+	   - a variable-length list of name+swatch+remove rows needs the room
+	   regardless of how wide the settings card itself happens to be. */
+	flex-basis: 100%;
+}
+
+.settings-app .setting-row:hover {
+	background-color: #fafbfc;
+}
+
+.settings-app .setting-row:last-child {
+	border-bottom: none;
+}
+
+.settings-app .setting-row-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.settings-app .setting-row-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1f2937;
+	display: block;
+	cursor: pointer;
+}
+
+.settings-app .setting-row-desc {
+	font-size: 14px;
+	color: #6b7280;
+	margin-top: 4px;
+	line-height: 1.5;
+}
+
+.settings-app .setting-row-control {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	padding-top: 2px;
+}
+
+/* Item Highlight Colors (see frontend._clientconfig.addItemColorRow/
+   renderItemColorRows) - a variable-length list of rows rather than the
+   single control every other .setting-row-control holds, so this one
+   stacks vertically (the rows list, then the "+ Add" button below it)
+   instead of the default single-line horizontal layout. */
+.settings-app .setting-row-control.itemcolor-control {
+	flex-direction: column;
+	align-items: stretch;
+	/* No max-width cap (unlike a plain toggle/text field, this control's
+	   name input needs to comfortably fit a full item name like
+	   "mediterranean lasagne" while it's being typed, not just its final
+	   saved value) - fills whatever width the row actually has, same as
+	   the textarea this replaced did with its own width:100%. */
+	flex: 1 1 400px;
+}
+.itemcolor-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.itemcolor-row .itemcolor-name {
+	flex: 1 1 auto;
+	/* Was min-width:0 (the usual flex-child default, added so the row
+	   never overflows its parent) - but combined with the Remove button's
+	   own generous default .btn padding, that let this field get squeezed
+	   down to just a few characters wide before wrapping the row instead.
+	   A concrete floor keeps it usable even in a narrow card. */
+	min-width: 180px;
+	padding: 8px;
+	font-size: 15px;
+	box-sizing: border-box;
+}
+.itemcolor-row .itemcolor-swatch {
+	flex: 0 0 auto;
+	width: 40px;
+	height: 32px;
+	padding: 2px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	cursor: pointer;
+}
+.itemcolor-row .itemcolor-remove {
+	/* Overrides .btn's own generous 12px/22px padding (sized for a
+	   standalone action button like "Save Settings") - at that size, one
+	   Remove button per row left barely any space for the name field
+	   beside it. Compact but still comfortably tappable. */
+	flex: 0 0 auto;
+	padding: 6px 14px !important;
+	font-size: 13px !important;
+}
+
+/* Text/password fields (Client Name, IP Address, Registration Key, ...) -
+   comfortably narrow alongside their label on a wide card, but a fixed
+   max-width didn't adapt when the card itself got narrow (either a small
+   screen, or several grid columns fitting side by side), squeezing each
+   row's input to a different, awkward width instead of properly wrapping
+   full-width below its label. */
+.settings-app .setting-row-control-text {
+	flex: 1 1 220px;
+	max-width: 260px;
+}
+
+@container (max-width: 480px) {
+	.settings-app .setting-row-control-text {
+		flex-basis: 100%;
+		max-width: 100%;
+	}
+}
+
+/* A setting row that expands into a nested sub-panel of extra fields when
+   its own toggle is switched on (Twilio credentials, duplication IPs,
+   priority item text, etc.) - the light accent strip visually ties the
+   sub-panel back to the toggle that revealed it. */
+.settings-app .setting-subpanel {
+	background-color: #f8fafc;
+	border-left: 3px solid #2563eb;
+	border-radius: 0 6px 6px 0;
+	padding: 14px 18px;
+	margin: 0 20px 16px;
+}
+
+.settings-app .setting-subpanel.dis {
+	display: none !important;
+}
+
+.settings-app .setting-subpanel label {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: #475569;
+	display: block;
+	margin-bottom: 5px;
+}
+
+.settings-app .setting-subpanel .field-group {
+	margin-bottom: 14px;
+}
+
+.settings-app .setting-subpanel .field-group:last-child {
+	margin-bottom: 0;
+}
+
+.settings-app .setting-subpanel small {
+	font-size: 13px;
+	color: #94a3b8;
+	display: block;
+	margin-top: 5px;
+}
+
+/* ==================== FORM CONTROLS ==================== */
+
+.settings-app input[type="text"],
+.settings-app input[type="number"] {
+	width: 100%;
+	box-sizing: border-box;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	padding: 11px 14px;
+	font-size: 15px;
+	color: #1f2937;
+	background-color: white;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-app input[type="text"]:focus,
+.settings-app input[type="number"]:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.settings-app input[type="color"] {
+	width: 46px;
+	height: 32px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	padding: 2px;
+	cursor: pointer;
+}
+
+.settings-app .field-pair {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.settings-app .field-pair input[type="text"],
+.settings-app .field-pair input[type="number"] {
+	flex: 1 1 auto;
+}
+
+/* ==================== TOGGLE SWITCH ====================
+   Wraps the *same* <input type="checkbox" id="..."> every existing script
+   already targets by id/checked - purely a visual reskin, no behavior
+   changes, so frontend.js needs zero edits for this. */
+.settings-app .switch {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 25px;
+	flex-shrink: 0;
+}
+
+/* Beats config.css's body.touchui input[type='checkbox'] rule (which would
+   otherwise force this hidden input back to a visible 32x32 box) on
+   specificity regardless of stylesheet order. */
+body.touchui .settings-app .switch input[type="checkbox"],
+.settings-app .switch input[type="checkbox"] {
+	opacity: 0;
+	width: 0;
+	height: 0;
+	position: absolute;
+}
+
+.settings-app .switch-slider {
+	position: absolute;
+	inset: 0;
+	background-color: #cbd5e1;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.settings-app .switch-slider::before {
+	content: "";
+	position: absolute;
+	height: 19px;
+	width: 19px;
+	left: 3px;
+	top: 3px;
+	background-color: white;
+	border-radius: 50%;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+	transition: transform 0.15s ease;
+}
+
+.settings-app .switch input:checked + .switch-slider {
+	background-color: #2563eb;
+}
+
+.settings-app .switch input:checked + .switch-slider::before {
+	transform: translateX(19px);
+}
+
+.settings-app .switch input:focus-visible + .switch-slider {
+	outline: 2px solid #2563eb;
+	outline-offset: 2px;
+}
+
+/* ==================== BUTTONS ==================== */
+
+/* Milligram's own input[type=button] rule sets height:38px, which - now
+   that the text inside is a readable size instead of the crushed 8.5px it
+   used to render at - left a lot of dead vertical space around the label.
+   height:auto plus generous padding lets the button size itself around the
+   text instead of fighting a fixed height from another stylesheet. */
+.settings-app .btn {
+	appearance: none;
+	box-sizing: border-box;
+	border: none;
+	border-radius: 6px;
+	height: auto;
+	line-height: 1.3;
+	padding: 12px 22px;
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	cursor: pointer;
+	transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+	/* input[type=button]'s text-align isn't reliably centered on its own
+	   once a border/box-sizing mix is in play (a bordered secondary/danger
+	   button and a borderless primary button can end up off by a pixel or
+	   two from each other) - flex centering both axes explicitly removes
+	   the ambiguity instead of leaning on default UA button behavior. */
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+.settings-app .btn:active {
+	transform: translateY(1px);
+}
+
+/* config.css's body.touchui input[type='button'] rule outranks a plain
+   two-class .btn selector on specificity, so without this it would
+   silently reassert its own min-height/padding/font-size here regardless
+   of load order once touch mode is on. */
+body.touchui .settings-app .btn {
+	min-height: 48px;
+	padding: 12px 24px;
+	font-size: 15px;
+}
+
+.settings-app .btn-primary {
+	background-color: #2563eb;
+	color: white;
+	box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+}
+
+.settings-app .btn-primary:hover {
+	background-color: #1d4ed8;
+	box-shadow: 0 2px 5px rgba(37, 99, 235, 0.35);
+}
+
+.settings-app .btn-secondary {
+	background-color: white;
+	color: #374151;
+	border: 1px solid #d1d5db;
+}
+
+.settings-app .btn-secondary:hover {
+	background-color: #f8fafc;
+}
+
+.settings-app .btn-danger {
+	background-color: white;
+	color: #dc2626;
+	border: 1px solid #fca5a5;
+}
+
+.settings-app .btn-danger:hover {
+	background-color: #fef2f2;
+}
+
+.settings-app .btn:disabled {
+	background-color: #e5e7eb;
+	color: #9ca3af;
+	border-color: #e5e7eb;
+	cursor: not-allowed;
+}
+
+.settings-app .settings-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: flex-end;
+	padding: 16px 20px;
+}
+
+.settings-app .settings-link {
+	color: #2563eb;
+	text-decoration: none;
+}
+
+.settings-app .settings-link:hover {
+	text-decoration: underline;
+}
+
+/* ==================== HEADER NAV (admin.html) ==================== */
+
+.settings-app .settings-header-nav {
+	display: flex;
+	gap: 10px;
+}
+
+.settings-app .settings-header-nav .btn-secondary {
+	background-color: transparent;
+	border-color: #4b5563;
+	color: #e5e7eb;
+}
+
+.settings-app .settings-header-nav .btn-secondary:hover {
+	background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ==================== SERVICE STATUS (admin.html) ====================
+   Still a disabled <input> under the hood - comms.js sets its .value
+   directly ("RUNNING"/"STOPPED"), and only form controls have a .value to
+   set, so it can't become a plain <span> - just restyled into a compact,
+   color-coded status badge instead of a bare text box. comms.js also
+   toggles status-running/status-stopped alongside the .value so the badge
+   color actually reflects the state, not just its label text. */
+.settings-app input[type="text"].status-pill {
+	width: auto;
+	max-width: 100%;
+	box-sizing: border-box;
+	text-align: center;
+	font-weight: 700;
+	font-size: 12.5px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	padding: 7px 16px;
+	border-radius: 999px;
+	color: #64748b;
+	background-color: #f1f5f9;
+	border: 1px solid #e2e8f0;
+	cursor: default;
+}
+
+.settings-app input[type="text"].status-pill.status-running {
+	color: #15803d;
+	background-color: #dcfce7;
+	border-color: #bbf7d0;
+}
+
+.settings-app input[type="text"].status-pill.status-stopped {
+	color: #b91c1c;
+	background-color: #fee2e2;
+	border-color: #fecaca;
+}
+
+.settings-app .service-log {
+	list-style: none;
+	margin: 0;
+	padding: 10px 12px;
+	/* A fixed height, not just max-height - otherwise a service with only
+	   a couple of short log lines (like KDS TCP Server right after boot)
+	   renders a visibly shorter box than its siblings, throwing off the
+	   whole card's height and breaking row alignment across the grid.
+	   Every log box - and so every card - now stays the same size
+	   regardless of how much a given service has actually logged. */
+	height: 160px;
+	overflow-y: auto;
+	background-color: #0f172a;
+	color: #cbd5e1;
+	border-radius: 6px;
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+	font-size: 12.5px;
+	line-height: 1.6;
+}
+
+.settings-app .service-log li {
+	white-space: pre-wrap;
+	word-break: break-word;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	padding: 2px 0;
+}
+
+.settings-app .service-log li:last-child {
+	border-bottom: none;
+}
+
+.settings-app .service-log li:first-child:last-child {
+	color: #64748b;
+	font-style: italic;
+}
+
+.settings-app .service-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 24px;
+	padding: 16px 20px;
+	align-items: flex-start;
+}
+
+.settings-app .service-col {
+	flex: 1 1 260px;
+	min-width: 0;
+}
+
+.settings-app .service-col-status {
+	/* Fixed-ish but allowed to wrap onto its own line below the logs
+	   column, rather than the old flex:0 0 140px which stayed pinned to
+	   that width and forced the row wider than the viewport - the actual
+	   cause of the status badge getting clipped off-screen on a narrower
+	   window instead of just reflowing underneath. */
+	flex: 0 1 160px;
+	min-width: 140px;
+}
+
+.settings-app .service-col-label {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	margin-bottom: 8px;
+	display: block;
+}
+
+/* admin.html specifically: exactly 4 service cards, always - a known,
+   fixed count rather than the settings pages' variable number of
+   collapsible sections, so the masonry/multi-column cascade used there
+   (tuned for filling odd, changing amounts of vertical space without
+   gaps) is the wrong tool here. It only ever picked 2 columns on a wide
+   screen, wasting the right half of it, because balancing 4
+   similar-height cards into fewer, taller columns can read as "more
+   balanced" to the multi-column algorithm than spreading them out. A
+   plain responsive grid fills the full width deliberately instead. */
+/* .admin-services-panel.active (not just .admin-services-panel) to match
+   .settings-tab-panel.active's own specificity - otherwise that rule's
+   display:block would win over this one's display:grid regardless of
+   source order, since three classes beats two. */
+.settings-app .admin-services-panel.active,
+.settings-app .admin-services-panel > form {
+	columns: unset;
+	display: grid;
+	/* min(420px, 100%), not a flat 420px - otherwise the column floor
+	   itself is wider than a narrow screen and forces horizontal
+	   overflow instead of collapsing to one column. */
+	grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+	align-content: start;
+	gap: 20px;
+}
+
+.settings-app .admin-services-panel .settings-group {
+	max-width: none;
+	display: block;
+	margin: 0;
+	break-inside: auto;
+	align-self: start;
+}
+
+/* The maintenance-actions card wraps its buttons in .settings-actions,
+   but grid-column only affects direct grid children - the card itself
+   (the actual direct child of the grid) is what needs to span full width
+   here, not the button row nested inside it. */
+.settings-app .admin-services-panel .admin-actions-group {
+	grid-column: 1 / -1;
+	max-width: none;
+}
+
+/* Pass Terminal setting: the select and its "Rediscover" button stack
+   vertically, sharing the row's own control width (setting-row-control-text
+   caps that at 260px) rather than fighting the select for horizontal room -
+   see clientconfig.html and frontend._config.rediscoverPassTerminals. */
+.settings-app .passterminal-control {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+.settings-app .rediscover-pass-btn {
+	height: auto;
+	min-height: 38px;
+	width: 100%;
+	padding: 6px 10px;
+	font-size: 12px;
+	line-height: 1.3;
+	white-space: normal;
+}
+.settings-app .rediscover-pass-btn:disabled {
+	opacity: 0.6;
+	cursor: default;
+}

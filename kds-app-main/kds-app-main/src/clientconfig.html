@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>CLIENT CONFIG</title>
+  <link rel="stylesheet" href="index.css">
+  <link href="css/normalize.css" rel="stylesheet">
+  <link href="css/milligram.min.css" rel="stylesheet">
+  <link href="css/site.css" rel="stylesheet">
+  <link href="css/config.css" rel="stylesheet">
+  <link href="css/clientconfig.css" rel="stylesheet">
+  <link href="css/osk.css" rel="stylesheet">
+  <script type="text/javascript" src="js/frontend/frontend.js"></script>
+  <script type="text/javascript" src="js/frontend/osk.js"></script>
+</head>
+
+<body class="settings-app" oncontextmenu="return false;" onselectstart="return false" onload="frontend._clientconfig.initialize()"
+  ondragstart="return false;">
+
+  <audio id="kdstestaudio">
+    <source src="assets/ding.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="settings-header">
+    <div>
+      <h1>KDS Configuration</h1>
+      <div class="settings-header-sub">Kitchen Display System settings for this terminal</div>
+    </div>
+  </div>
+
+  <div class="settings-tabs">
+    <button class="settings-tab-btn active" type="button" data-tab="general">KDS Config</button>
+    <button class="settings-tab-btn" type="button" data-tab="settings">KDS Settings</button>
+    <button class="settings-tab-btn" type="button" data-tab="sms">SMS Config</button>
+    <button class="settings-tab-btn" type="button" data-tab="bumpbar">Bumpbar Config</button>
+    <button class="settings-tab-btn" type="button" data-tab="sound">Sound Config</button>
+    <button class="settings-tab-btn" type="button" data-tab="tests">System Tests</button>
+  </div>
+
+  <div id="general" class="settings-tab-panel active">
+    <form id="clientform">
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Client Setup</h2>
+          <p>Identifies this terminal to the KDS network</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="nameField">Client Name</label>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <input type="text" placeholder="Joes Pizza" id="nameField">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="locationField">Location / Store Name</label>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <input type="text" placeholder="Corner Street" id="locationField">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="kdsField">KDS Name</label>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <input type="text" placeholder="Grill" id="kdsField">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="ipField">IP Address</label>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <input type="text" placeholder="10.0.0.1" id="ipField">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Display &amp; Layout</h2>
+          <p>How items and text are arranged on the main board</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="compressitems">Enable Item Compression</label>
+            <div class="setting-row-desc">Combines matching main items together on the main display</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="compressitems"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="showheadings">Show Account Profile Headings</label>
+            <div class="setting-row-desc">Shows the account profile used on the main display per order</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="showheadings"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="leftalign">Align Main &amp; Sub Items Left</label>
+            <div class="setting-row-desc">Left-aligns items and sub-items; unchecking centers them instead</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="leftalign"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="checkboxes">Enable Checkboxes Per Item</label>
+            <div class="setting-row-desc">Lets you tick off an item from an order using checkboxes</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="checkboxes"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="fontsize">Font Size (px)</label>
+            <div class="setting-row-desc">Controls the base text size across the main display; leave at the default if unsure</div>
+          </div>
+          <div class="setting-row-control" style="width:100px;">
+            <input type="number" id="fontsize" min="8" max="48" step="1" placeholder="16">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Board Behavior</h2>
+          <p>Production tracking, sorting, and touch interaction</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="standalonemode">Standalone Mode</label>
+            <div class="setting-row-desc">This KDS only ever bumps its own orders and is never a pass terminal for any other screen - forces Pass Mode off and clears any assigned Pass Terminal below, both disabled while this is on.</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input onchange="frontend._clientconfig.ApplyStandaloneMode(this.checked);" type="checkbox" id="standalonemode"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="passmode">Enable Pass Mode</label>
+            <div class="setting-row-desc">Allows this KDS to close an order - the Close Order button is hidden unless pass mode is enabled</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="passmode"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="passterminalField">Pass Terminal</label>
+            <div class="setting-row-desc">Which pass terminal bumps this screen's orders when it presses Close Order. Leave as "None" and this screen can only bump its own orders itself (via its own Close Order button, once every item here is complete).</div>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <div class="passterminal-control">
+              <select id="passterminalField">
+                <option value="">None (bumps itself)</option>
+              </select>
+              <!-- Re-runs discovery right now instead of waiting on this
+                   terminal's own periodic 2-minute re-announce (or every
+                   other terminal's) - see frontend._config.rediscoverPassTerminals
+                   and rediscoverPassTerminalsHandler in kds-webserver-main. -->
+              <button type="button" id="rediscoverPassTerminalsBtn" class="button button-dark-blue rediscover-pass-btn" onclick="frontend._config.rediscoverPassTerminals();">Rediscover Pass Terminals</button>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="odsmode">Enable Order Display Mode</label>
+            <div class="setting-row-desc">Switches this terminal from a kitchen prep display to a customer-facing Order Ready board showing order numbers instead of full tickets. Restarts this terminal to the new screen after saving.</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="odsmode"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="productionmode">Enable Production Mode</label>
+            <div class="setting-row-desc">When enabled, items can be started/completed with in-production buttons and timers, and status updates are sent to other KDS terminals; when disabled, those controls are hidden entirely</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="productionmode"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="touchui">Enable Touch Interface</label>
+            <div class="setting-row-desc">Sizes buttons, checkboxes, and in-production controls larger for finger/glove use on a touchscreen; when disabled, the original denser layout is used</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="touchui"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="showoldestfirst">Show Oldest Orders First</label>
+            <div class="setting-row-desc">Board tiles default to newest order first; enable this to show the oldest open order first instead. Overridden by Sort Orders By Production State below when that's also enabled.</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="showoldestfirst"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="sortbyprodstate">Sort Orders By Production State</label>
+            <div class="setting-row-desc">Keeps order tiles sorted on the board by production state (in production, then not started, then completed - reversed on a pass-mode terminal); when disabled, tiles stay in arrival order</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="sortbyprodstate"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enabletilecollapse">Enable Order Tile Collapse/Expand</label>
+            <div class="setting-row-desc">Shows the "Collapse Order"/"Expand Order" bar on each board tile, letting staff shrink a tile down to just its header; when disabled, tiles are never collapsible and always show their full item list</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="enabletilecollapse"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="fixedtilesize">Fixed Tile Size</label>
+            <div class="setting-row-desc">Every order tile keeps the same fixed height on the board regardless of how many items it has, scrolling internally instead of growing/shrinking; replaces the Collapse Order/Expand Order bar with a running "N items on ticket" count</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="fixedtilesize"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="fixedtilerows">Fixed Tile Rows</label>
+            <div class="setting-row-desc">Only applies when Fixed Tile Size is on. How many tiles tall each column is - lower means fewer, bigger tiles (easier to read from across the kitchen); higher means more, smaller tiles (more orders visible at once without scrolling sideways).</div>
+          </div>
+          <div class="setting-row-control setting-row-control-text">
+            <input type="number" id="fixedtilerows" min="1" max="6" step="1" style="width:100%;">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="summarybystatus">Color-Code Summary By Production Status</label>
+            <div class="setting-row-desc">Groups the kitchen summary panel under NOT PRODUCED/IN PRODUCTION/COMPLETED headings (matching the board's own colors), with sub-items shown under their parent item; when disabled, the summary shows the original plain lists</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="summarybystatus"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enableallcenters">Show All Production Centers</label>
+            <div class="setting-row-desc">Does not limit the KDS display to just a single production center</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="enableallcenters"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enablemulticolumn">Enable Multicolumn</label>
+            <div class="setting-row-desc">Splits large orders into multiple columns</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="enablemulticolumn"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="allowmultiprogram">Allow More Than One Instance</label>
+            <div class="setting-row-desc">Does not limit the KDS processes to one at a time - recommended to keep off</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="allowmultiprogram"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Late Order Alerts</h2>
+          <p>Colors an order block after it has been open for a set amount of time</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="late1color">First Notification Color &amp; Timer</label>
+            <div class="setting-row-desc">Order block color and the number of minutes before it applies</div>
+          </div>
+          <div class="setting-row-control">
+            <div class="field-pair">
+              <input type="color" id="late1color" value="#CECECE">
+              <input type="number" style="width:90px;" id="late1time" placeholder="Minutes">
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="late2color">Second Notification Color &amp; Timer</label>
+            <div class="setting-row-desc">Order block color and the number of minutes before it applies</div>
+          </div>
+          <div class="setting-row-control">
+            <div class="field-pair">
+              <input type="color" id="late2color" value="#CECECE">
+              <input type="number" style="width:90px;" id="late2time" placeholder="Minutes">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <input class="btn btn-danger" onclick="frontend.exitApp()" type="button" value="Close The App">
+        <input class="btn btn-primary" onclick="frontend._config.saveConfig()" type="button" value="Save Settings">
+      </div>
+    </form>
+  </div>
+
+  <div id="settings" class="settings-tab-panel">
+    <form id="extrasettingform">
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Priority Handling</h2>
+          <p>Move urgent orders or items to the front of the queue</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="prioritykeywordenabled">Enable Priority Keywords</label>
+            <div class="setting-row-desc">Moves an order to the front of the queue if the priority keyword is present</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input onchange="frontend._clientconfig.ToggleInput(this,'keywordcontainer');" type="checkbox" id="prioritykeywordenabled"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div id="keywordcontainer" class="setting-subpanel dis">
+          <div class="field-group">
+            <label for="prioritykeywordtext">Priority Keyword</label>
+            <input type="text" placeholder="important" id="prioritykeywordtext">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="priorityitemenabled">Enable Priority Items</label>
+            <div class="setting-row-desc">Moves a matching item to the top of the order box</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input onchange="frontend._clientconfig.ToggleInput(this,'priorityitemcontainer');" type="checkbox" id="priorityitemenabled"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div id="priorityitemcontainer" class="setting-subpanel dis">
+          <div class="field-group">
+            <label for="priorityitemcontainertext1">Priority Item #1</label>
+            <input type="text" placeholder="important" id="priorityitemcontainertext1">
+          </div>
+          <div class="field-group">
+            <label for="priorityitemcontainertext2">Priority Item #2</label>
+            <input type="text" placeholder="important" id="priorityitemcontainertext2">
+          </div>
+          <div class="field-group">
+            <label for="priorityitemcontainertext3">Priority Item #3</label>
+            <input type="text" placeholder="important" id="priorityitemcontainertext3">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Printing</h2>
+          <p>Send a physical printout on completion</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enablesendprinter">Enable Printout Sending To Printer When Done</label>
+            <div class="setting-row-desc">Sends a printout to a network printer when the order is bumped off</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input onchange="frontend._clientconfig.ToggleInput(this,'sendprintercontainer');" type="checkbox" id="enablesendprinter"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div id="sendprintercontainer" class="setting-subpanel dis">
+          <div class="field-group">
+            <label for="sendprinterip">Network Printer IP Address</label>
+            <input type="text" placeholder="10.0.0.10" id="sendprinterip">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Multi-Terminal Sync</h2>
+          <p>Keep other KDS terminals in sync with this one</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enableduplication">Enable Duplication Of Incoming Orders</label>
+            <div class="setting-row-desc">Sends the same order to other KDS terminals, keeping in-production/completed status in sync no matter which terminal made the change</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input onchange="frontend._clientconfig.ToggleInput(this,'duplicationcontainer');" type="checkbox" id="enableduplication"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div id="duplicationcontainer" class="setting-subpanel dis">
+          <div class="field-group">
+            <label for="screen1">Network IP for Duplication (Master → Slave)</label>
+            <input type="text" placeholder="10.0.0.1" id="screen1">
+          </div>
+          <div class="field-group">
+            <label for="screen2">Second Network IP for Duplication (optional)</label>
+            <input type="text" placeholder="10.0.0.2" id="screen2">
+          </div>
+          <div class="field-group">
+            <label for="peers">Additional KDS Terminal IPs (comma-separated, optional)</label>
+            <input type="text" placeholder="10.0.0.3, 10.0.0.4" id="peers">
+            <small>Use this for sites with more than two other KDS terminals - every IP listed here also receives every update, the same as the two above</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Other</h2>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="enablecourses">Enable Courses On KDS</label>
+            <div class="setting-row-desc">Enables courses but disables profiles (they print exactly the same way)</div>
+          </div>
+          <div class="setting-row-control">
+            <label class="switch"><input type="checkbox" id="enablecourses"><span class="switch-slider"></span></label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title">Item Highlight Colors</label>
+            <div class="setting-row-desc">Pick a color for any item you want to stand out on the board (e.g. kids meals, allergens) - matches the item's name, not case-sensitive.</div>
+          </div>
+          <div class="setting-row-control itemcolor-control">
+            <div id="itemcolors-rows"></div>
+            <input class="btn btn-secondary" onclick="frontend._clientconfig.addItemColorRow()" type="button" value="+ Add Item Color">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title">Repair Broken Orders</label>
+            <div class="setting-row-desc">Finds any item stuck open on a corrupted/unnamed screen (a ticket whose screen marker failed to parse) and completes it, then re-checks its order - fixes an order that Close Order can never actually close no matter how many times it's pressed. Safe to press any time, including when nothing is broken.</div>
+          </div>
+          <div class="setting-row-control">
+            <!-- See frontend._config.repairBrokenOrders and
+                 repairBrokenOrdersHandler in kds-webserver-main. -->
+            <button type="button" id="repairBrokenOrdersBtn" class="button button-dark-blue" onclick="frontend._config.repairBrokenOrders();">Repair Broken Orders</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <input class="btn btn-primary" onclick="frontend._config.saveConfig()" type="button" value="Save Settings">
+      </div>
+    </form>
+  </div>
+
+  <div id="sms" class="settings-tab-panel">
+    <div class="settings-group">
+      <div class="settings-group-header is-collapsible">
+        <h2>SMS Notifications</h2>
+        <span class="settings-group-chevron">&#9662;</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-text">
+          <label class="setting-row-title" for="enablesms">Enable SMS On Order Complete</label>
+          <div class="setting-row-desc">Tries to send an SMS to a customer when their order is complete. The KDS currently only supports Twilio - you'll need a Twilio account, sign up <a class="settings-link" href="https://www.twilio.com/" target="_blank">here</a>.</div>
+        </div>
+        <div class="setting-row-control">
+          <label class="switch"><input onclick="frontend._clientconfig.updateSMSEnabled()" type="checkbox" id="enablesms"><span class="switch-slider"></span></label>
+        </div>
+      </div>
+      <div id="sms_extra" style="display:none;">
+        <div class="setting-subpanel" style="margin-top:0;">
+          <div class="field-group">
+            <label for="twilio_accountsid">Twilio Account SID</label>
+            <input type="text" placeholder="TWILIO ACCOUNT_SID" id="twilio_accountsid">
+          </div>
+          <div class="field-group">
+            <label for="twilio_authtoken">Twilio Auth Token</label>
+            <input type="text" placeholder="TWILIO AUTH_TOKEN" id="twilio_authtoken">
+          </div>
+          <div class="field-group">
+            <label for="twilio_sendingnumber">Twilio Sending Number</label>
+            <input type="text" placeholder="TWILIO SENDING_NUMBER" id="twilio_sendingnumber">
+          </div>
+          <div class="field-group">
+            <label for="twilio_message">Twilio Order-Complete Message</label>
+            <input type="text" placeholder="TWILIO ORDER COMPLETE MESSAGE" id="twilio_message">
+          </div>
+          <div class="settings-actions" style="padding:10px 0 0;">
+            <input class="btn btn-secondary" onclick="frontend._clientconfig.updateSMS()" type="button" value="Save Twilio Settings">
+          </div>
+        </div>
+        <div class="setting-subpanel">
+          <div class="field-group">
+            <label for="twilio_test_number">Test Twilio (International format, e.g. +27811111111)</label>
+            <input type="text" placeholder="Enter Number International Format" id="twilio_test_number">
+          </div>
+          <div class="settings-actions" style="padding:10px 0 0;">
+            <input class="btn btn-secondary" onclick="frontend._clientconfig.sendTestSMS()" type="button" value="Send Test SMS">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tests" class="settings-tab-panel">
+    <div class="settings-group">
+      <div class="settings-group-header is-collapsible">
+        <h2>System Tests</h2>
+        <p>Check that sound and other feedback are working correctly</p>
+        <span class="settings-group-chevron">&#9662;</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-text">
+          <label class="setting-row-title">Test Notification Sound</label>
+          <div class="setting-row-desc">Plays the same sound used for order notifications</div>
+        </div>
+        <div class="setting-row-control">
+          <input class="btn btn-secondary" onclick="frontend._clientconfig.sendTestSound()" type="button" value="Send Test Sound">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bumpbar" class="settings-tab-panel">
+    <div class="settings-group">
+      <div class="settings-group-header is-collapsible">
+        <h2>Bump Bar &amp; Keyboard Shortcuts</h2>
+        <span class="settings-group-chevron">&#9662;</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-text">
+          <label class="setting-row-title" for="enablebump">Enable Bump Bar &amp; Keyboard Shortcut Key Mapping</label>
+          <div class="setting-row-desc">Lets you map bump bar keys to shortcuts in the KDS. Map and save each key individually - only the ones you want to use need mapping.</div>
+        </div>
+        <div class="setting-row-control">
+          <label class="switch"><input onclick="frontend._clientconfig.updateEnabled()" type="checkbox" id="enablebump"><span class="switch-slider"></span></label>
+        </div>
+      </div>
+      <div id="bumpbar_extra" style="display:none;">
+        <div class="setting-subpanel">
+          <div class="field-group">
+            <label for="keycloseorder">Close Order Key</label>
+            <input type="text" readonly placeholder="PRESS BUTTON TO SET KEY" id="keycloseorder">
+            <div class="settings-actions" style="padding:10px 0 0; justify-content:flex-start;">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.mapKey('keycloseorder' , 'KEY_CLOSE_ORDER')" type="button" value="Set Key">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.resetMapKey('keycloseorder' , 'KEY_CLOSE_ORDER')" type="button" value="Reset To Default">
+              <input class="btn btn-primary" onclick="frontend._clientconfig.updateMapKey('KEY_CLOSE_ORDER')" id="keycloseorder-save" disabled type="button" value="Save &amp; Update Mapping">
+            </div>
+          </div>
+        </div>
+        <div class="setting-subpanel">
+          <div class="field-group">
+            <label for="keyrecallorder">Recall Orders Screen</label>
+            <input type="text" readonly placeholder="PRESS BUTTON TO SET KEY" id="keyrecallorder">
+            <div class="settings-actions" style="padding:10px 0 0; justify-content:flex-start;">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.mapKey('keyrecallorder' , 'KEY_RECALL_ORDER')" type="button" value="Set Key">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.resetMapKey('keyrecallorder' , 'KEY_RECALL_ORDER')" type="button" value="Reset To Default">
+              <input class="btn btn-primary" onclick="frontend._clientconfig.updateMapKey('KEY_RECALL_ORDER')" id="keyrecallorder-save" disabled type="button" value="Save &amp; Update Mapping">
+            </div>
+          </div>
+        </div>
+        <div class="setting-subpanel">
+          <div class="field-group">
+            <label for="keycancelaction">Cancel Action Key</label>
+            <input type="text" readonly placeholder="PRESS BUTTON TO SET KEY" id="keycancelaction">
+            <div class="settings-actions" style="padding:10px 0 0; justify-content:flex-start;">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.mapKey('keycancelaction' , 'KEY_CANCEL_ACTION')" type="button" value="Set Key">
+              <input class="btn btn-secondary" onclick="frontend._clientconfig.resetMapKey('keycancelaction' , 'KEY_CANCEL_ACTION')" type="button" value="Reset To Default">
+              <input class="btn btn-primary" onclick="frontend._clientconfig.updateMapKey('KEY_CANCEL_ACTION')" id="keycancelaction-save" disabled type="button" value="Save &amp; Update Mapping">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sound" class="settings-tab-panel">
+    <div class="settings-group">
+      <div class="settings-group-header is-collapsible">
+        <h2>Sound Notifications</h2>
+        <span class="settings-group-chevron">&#9662;</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-text">
+          <label class="setting-row-title" for="updateOrderSound">Enable Sound For Updated Orders</label>
+          <div class="setting-row-desc">Adds the notification sound to updated orders</div>
+        </div>
+        <div class="setting-row-control">
+          <label class="switch"><input onclick="frontend._clientconfig.updateOrderSound()" type="checkbox" id="updateOrderSound"><span class="switch-slider"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

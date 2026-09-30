@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KDS Order Injector</title>
+<style>
+  :root {
+    --bg: #1b1e24;
+    --panel: #23272f;
+    --border: #343a45;
+    --text: #e6e9ef;
+    --muted: #9aa4b2;
+    --accent: #4f8cff;
+    --ok: #3ecf8e;
+    --bad: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; white-space: nowrap; }
+  header .host-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px; }
+  input, textarea, select, button {
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+  }
+  input[type=text], input#host { flex: 1; min-width: 180px; }
+  button {
+    cursor: pointer;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+  button.secondary { background: var(--panel); color: var(--text); border-color: var(--border); font-weight: 500; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #pingStatus { font-size: 12px; color: var(--muted); min-width: 90px; }
+  #pingStatus.ok { color: var(--ok); }
+  #pingStatus.bad { color: var(--bad); }
+
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: calc(100vh - 57px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+
+  .col { padding: 16px 20px; overflow-y: auto; }
+  .col + .col { border-left: 1px solid var(--border); }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tabs button { background: transparent; color: var(--muted); border-color: transparent; }
+  .tabs button.active { background: var(--panel); color: var(--text); border-color: var(--border); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  textarea#pasteBox {
+    width: 100%;
+    height: 320px;
+    resize: vertical;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .grid-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 6px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .field input { width: 100%; }
+  .dropzone {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .dropzone.drag { border-color: var(--accent); color: var(--accent); }
+
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+
+  #log { display: flex; flex-direction: column; gap: 6px; }
+  .entry {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    background: var(--panel);
+  }
+  .entry.ok { border-left-color: var(--ok); }
+  .entry.bad { border-left-color: var(--bad); }
+  .entry .top { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+  .entry .id { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--text); }
+  .entry .err { color: var(--bad); margin-top: 4px; }
+  .empty { color: var(--muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>KDS Order Injector</h1>
+  <div class="host-row">
+    <input id="host" type="text" value="http://localhost:2020" spellcheck="false">
+    <button class="secondary" id="pingBtn">Ping</button>
+    <span id="pingStatus"></span>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <div class="tabs">
+      <button data-tab="paste" class="active">Paste / File</button>
+      <button data-tab="ticket">Raw Ticket Text</button>
+      <button data-tab="random">Random Test Orders</button>
+    </div>
+
+    <div class="panel active" id="tab-paste">
+      <h2>Order JSON</h2>
+      <textarea id="pasteBox" spellcheck="false" placeholder='Paste one order object, or an array of orders, e.g.
+
+[
+  {
+    "id": "SAMPLE-0001",
+    "productCenter": "Kitchen",
+    "tableName": "Table 7",
+    "waiterName": "Jane D",
+    "items": [
+      { "sku": "BRG001", "name": "Beef Burger", "qty": 2, "price": 8500 }
+    ]
+  }
+]'></textarea>
+      <div class="dropzone" id="dropzone">Drop a .json file here, or <label style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse<input type="file" id="fileInput" accept=".json,application/json" style="display:none"></label></div>
+      <div class="row">
+        <button id="sendPasteBtn">Send</button>
+        <button class="secondary" id="clearPasteBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="panel" id="tab-ticket">
+      <h2>Raw Ticket / Print-Feed Text</h2>
+      <textarea id="ticketBox" spellcheck="false" placeholder="Paste the raw text a POS ticket would print - table, staff, items etc. This is parsed the same way kds-poller parses a real print feed."></textarea>
+      <div class="dropzone" id="ticketDropzone">Drop a .txt file here, or <label style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse<input type="file" id="ticketFileInput" accept=".txt,text/plain" style="display:none"></label></div>
+      <div class="grid-fields" style="grid-template-columns: 1fr;">
+        <div class="field"><label>Fallback product center / screen (used only if the ticket has no "* * SCREEN * *" marker)</label><input id="ticketScreen" type="text" value="Kitchen"></div>
+      </div>
+      <div class="row">
+        <button class="secondary" id="previewTicketBtn">Preview parsed order</button>
+        <button id="sendTicketBtn">Send</button>
+        <button class="secondary" id="clearTicketBtn">Clear</button>
+      </div>
+      <div id="ticketPreview" style="display:none; margin-top:10px;">
+        <h2>Preview</h2>
+        <pre style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px;white-space:pre-wrap;word-break:break-word;"></pre>
+      </div>
+    </div>
+
+    <div class="panel" id="tab-random">
+      <h2>Generate &amp; Send</h2>
+      <div class="grid-fields">
+        <div class="field"><label>Count</label><input id="rCount" type="number" min="1" value="1"></div>
+        <div class="field"><label>Interval (ms)</label><input id="rInterval" type="number" min="0" value="500"></div>
+        <div class="field"><label>Table (blank = random)</label><input id="rTable" type="text"></div>
+        <div class="field"><label>Waiter (blank = random)</label><input id="rWaiter" type="text"></div>
+        <div class="field"><label>Items per order (0 = random 1-4)</label><input id="rItems" type="number" min="0" value="0"></div>
+        <div class="field"><label>Seed (0 = random)</label><input id="rSeed" type="number" min="0" value="0"></div>
+      </div>
+      <div class="row">
+        <button id="sendRandomBtn">Send Random Order(s)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>Results</h2>
+    <div id="log"><div class="empty">Nothing sent yet.</div></div>
+  </div>
+</main>
+
+<script>
+const hostInput = document.getElementById('host');
+hostInput.value = localStorage.getItem('kds-injector-host') || hostInput.value;
+hostInput.addEventListener('change', () => localStorage.setItem('kds-injector-host', hostInput.value));
+
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+const pingBtn = document.getElementById('pingBtn');
+const pingStatus = document.getElementById('pingStatus');
+pingBtn.addEventListener('click', async () => {
+  pingStatus.textContent = 'checking...';
+  pingStatus.className = '';
+  try {
+    const res = await fetch('/api/ping?host=' + encodeURIComponent(hostInput.value));
+    const data = await res.json();
+    if (data.ok) {
+      pingStatus.textContent = 'reachable';
+      pingStatus.className = 'ok';
+    } else {
+      pingStatus.textContent = 'unreachable: ' + data.error;
+      pingStatus.className = 'bad';
+    }
+  } catch (e) {
+    pingStatus.textContent = 'unreachable: ' + e.message;
+    pingStatus.className = 'bad';
+  }
+});
+
+const logEl = document.getElementById('log');
+function renderResults(results) {
+  const empty = logEl.querySelector('.empty');
+  if (empty) empty.remove();
+  const now = new Date().toLocaleTimeString();
+  results.slice().reverse().forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'entry ' + (r.ok ? 'ok' : 'bad');
+    div.innerHTML =
+      '<div class="top"><span class="id">' + escapeHtml(r.id || '(no id)') + '</span><span>' + now + '</span></div>' +
+      '<div>table ' + escapeHtml(r.table || '-') + ' &middot; waiter ' + escapeHtml(r.waiter || '-') + ' &middot; ' + r.items + ' item(s) &middot; ' + (r.ok ? 'OK' : 'FAILED') + '</div>' +
+      (r.error ? '<div class="err">' + escapeHtml(r.error) + '</div>' : '');
+    logEl.prepend(div);
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function logError(msg) {
+  const div = document.createElement('div');
+  div.className = 'entry bad';
+  div.textContent = msg;
+  logEl.prepend(div);
+}
+
+const pasteBox = document.getElementById('pasteBox');
+document.getElementById('clearPasteBtn').addEventListener('click', () => pasteBox.value = '');
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+function loadFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { pasteBox.value = reader.result; };
+  reader.readAsText(file);
+}
+fileInput.addEventListener('change', () => loadFile(fileInput.files[0]));
+['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+  e.preventDefault(); dropzone.classList.add('drag');
+}));
+['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+}));
+dropzone.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+document.getElementById('sendPasteBtn').addEventListener('click', async () => {
+  const body = pasteBox.value.trim();
+  if (!body) { logError('Nothing to send - paste or load an order first.'); return; }
+  try {
+    const res = await fetch('/api/send', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({host: hostInput.value, body})
+    });
+    if (!res.ok) { logError(await res.text()); return; }
+    renderResults(await res.json());
+  } catch (e) {
+    logError(e.message);
+  }
+});
+
+const ticketBox = document.getElementById('ticketBox');
+document.getElementById('clearTicketBtn').addEventListener('click', () => {
+  ticketBox.value = '';
+  document.getElementById('ticketPreview').style.display = 'none';
+});
+
+const ticketFileInput = document.getElementById('ticketFileInput');
+const ticketDropzone = document.getElementById('ticketDropzone');
+function loadTicketFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { ticketBox.value = reader.result; };
+  reader.readAsText(file);
+}
+ticketFileInput.addEventListener('change', () => loadTicketFile(ticketFileInput.files[0]));
+['dragenter', 'dragover'].forEach(evt => ticketDropzone.addEventListener(evt, e => {
+  e.preventDefault(); ticketDropzone.classList.add('drag');
+}));
+['dragleave', 'drop'].forEach(evt => ticketDropzone.addEventListener(evt, e => {
+  e.preventDefault(); ticketDropzone.classList.remove('drag');
+}));
+ticketDropzone.addEventListener('drop', e => loadTicketFile(e.dataTransfer.files[0]));
+
+document.getElementById('previewTicketBtn').addEventListener('click', async () => {
+  const body = ticketBox.value;
+  if (!body.trim()) { logError('Nothing to preview - paste or load a ticket first.'); return; }
+  try {
+    const res = await fetch('/api/parse-ticket', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({host: hostInput.value, body, screen: document.getElementById('ticketScreen').value})
+    });
+    if (!res.ok) { logError(await res.text()); return; }
+    const order = await res.json();
+    const previewEl = document.getElementById('ticketPreview');
+    previewEl.style.display = 'block';
+    previewEl.querySelector('pre').textContent = JSON.stringify(order, null, 2);
+  } catch (e) {
+    logError(e.message);
+  }
+});
+
+document.getElementById('sendTicketBtn').addEventListener('click', async () => {
+  const body = ticketBox.value;
+  if (!body.trim()) { logError('Nothing to send - paste or load a ticket first.'); return; }
+  try {
+    const res = await fetch('/api/send-ticket', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({host: hostInput.value, body, screen: document.getElementById('ticketScreen').value})
+    });
+    if (!res.ok) { logError(await res.text()); return; }
+    renderResults([await res.json()]);
+  } catch (e) {
+    logError(e.message);
+  }
+});
+
+document.getElementById('sendRandomBtn').addEventListener('click', async () => {
+  const req = {
+    host: hostInput.value,
+    count: parseInt(document.getElementById('rCount').value, 10) || 1,
+    intervalMs: parseInt(document.getElementById('rInterval').value, 10) || 0,
+    table: document.getElementById('rTable').value,
+    waiter: document.getElementById('rWaiter').value,
+    items: parseInt(document.getElementById('rItems').value, 10) || 0,
+    seed: parseInt(document.getElementById('rSeed').value, 10) || 0,
+  };
+  try {
+    const res = await fetch('/api/random', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(req)
+    });
+    if (!res.ok) { logError(await res.text()); return; }
+    renderResults(await res.json());
+  } catch (e) {
+    logError(e.message);
+  }
+});
+</script>
+</body>
+</html>

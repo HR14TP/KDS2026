@@ -1,0 +1,67 @@
+body {
+	background-color: #cecece !important;
+	font-family: Helvetica Neue, Helvetica, Arial, sans-serif;	
+    height: 100vh;
+    width: 100vw;
+    max-width: 100vw;
+}
+.container {
+    width: 100%!important;
+    max-width: 100vw;
+    width: 100vw;
+    margin: 0;
+}
+.dis {
+    display: none!important;
+}
+
+/* Harmless either way (doesn't change layout/density), so left
+   unconditional: kills the tap flash Chromium shows on every button/
+   checkbox press with nothing to touch a mouse with instead. */
+body {
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* ==================== TOUCH INTERFACE (KDS config toggle) ================
+   Registration + client config screens' version of the same toggle as
+   wimpy.css (kept separate since these two pages don't load wimpy.css).
+   Off by default - the original, denser layout is what every existing
+   install keeps seeing unless someone explicitly opts in via "Enable
+   Touch Interface". Selectors carry the body.touchui prefix specifically
+   so they win on specificity against Milligram's own (e.g.
+   "input[type='button']" is more specific than a bare ".button", but
+   "body.touchui input[type='button']" beats both regardless of
+   stylesheet order). */
+body.touchui {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body.touchui .button, body.touchui button, body.touchui input[type='button'], body.touchui input[type='reset'], body.touchui input[type='submit'] {
+	height: auto;
+	min-height: 54px;
+	font-size: 1.5rem;
+	padding: 10px 26px;
+	line-height: 1.3;
+	touch-action: manipulation;
+}
+
+body.touchui input[type='email'], body.touchui input[type='number'], body.touchui input[type='password'], body.touchui input[type='search'], body.touchui input[type='tel'], body.touchui input[type='text'], body.touchui input[type='url'], body.touchui textarea, body.touchui select {
+	height: auto;
+	min-height: 52px;
+	font-size: 1.6rem;
+	padding: 10px 14px;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+body.touchui input[type='checkbox'], body.touchui input[type='radio'] {
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+	touch-action: manipulation;
+	/* Default vertical-align:baseline sits a 32px box well above its
+	   label's text baseline instead of level with it - looks like the
+	   checkbox and its own label don't belong together. */
+	vertical-align: middle;
+}
