@@ -103,6 +103,77 @@ func applyNewOrderRemote(order kdsmodels.KDSOrders) {
 	}
 }
 
+// applyNewOrderItemsRemote appends items a peer terminal added to an order
+// that already exists on this terminal's own copy too (see kds-poller's
+// broadcastNewItemsOnOrder) - unlike applyNewOrderRemote, this never creates
+// a new order row; if this terminal doesn't have the referenced order OPEN
+// today, the broadcast is silently dropped, same as every other remote
+// handler's reference-not-found case. KDSScreenID is a local foreign key,
+// not portable between terminals' own databases - map by the screen's name
+// instead (getScreenSally creates it locally on first sight), same as
+// applyNewOrderRemote already does for a brand new order's own items.
+//
+// UDP delivery is not exactly-once: the global broadcast address
+// (255.255.255.255) and the subnet-directed broadcast address
+// (e.g. 10.240.7.255) both reach the same machine on a single-subnet site,
+// so this terminal's own listener receives one broadcastNewItemsOnOrder
+// call as two identical UDP packets - confirmed live. applyNewOrderRemote
+// doesn't need to guard against this (a duplicate "new order" delivery
+// finds the order already exists and reconciles instead of re-creating),
+// but a duplicate "new items" delivery has no such natural check, since
+// genuinely adding the same-named item again later is also valid - the
+// delivered Created timestamp (stamped once, at the sending terminal's own
+// ingestion time) is what actually distinguishes "this exact event,
+// delivered twice" from "a later, separate round that happens to reorder
+// the same dish": two deliveries of the same event carry the identical
+// Created value, while a genuinely new round gets a fresh one.
+func applyNewOrderItemsRemote(payload kdsmodels.KDSNewItemsOnOrder) {
+	order := getDatabaseOrderOnReference(config, payload.Reference)
+	if order.ID == 0 {
+		return
+	}
+	for _, item := range payload.Items {
+		if remoteOrderItemAlreadyApplied(order.ID, item.Name, item.Created) {
+			continue
+		}
+		screen := getScreenSally(item.Screen.Name)
+		newitem := kdsmodels.KDSItems{}
+		newitem.KDSOrderID = order.ID
+		newitem.Name = item.Name
+		newitem.Qty = item.Qty
+		newitem.QtyRaw = item.QtyRaw
+		newitem.Status = item.Status
+		newitem.KDSScreenID = screen.ID
+		newitem.Created = item.Created
+		newitem.IsKiddies = item.IsKiddies
+		newitem.PrepMins = item.PrepMins
+		newitem.PrepSecs = item.PrepSecs
+		newitem.SubOrder = item.SubOrder
+		newitem = saveSallyItem(newitem)
+		for _, sub := range item.SubItems {
+			newsub := kdsmodels.KDSSubitems{}
+			newsub.KDSItemID = newitem.ID
+			newsub.Name = sub.Name
+			newsub.Qty = sub.Qty
+			newsub.QtyRaw = sub.QtyRaw
+			newsub.Status = sub.Status
+			saveSallySubItem(newsub)
+		}
+	}
+}
+
+// remoteOrderItemAlreadyApplied reports whether orderid already has an item
+// matching name+created - see applyNewOrderItemsRemote's own doc comment
+// for why this specific pair is the right de-duplication key for a
+// redelivered broadcast.
+func remoteOrderItemAlreadyApplied(orderid int, name string, created string) bool {
+	var count int64
+	ENV.DB.Model(&kdsmodels.KDSItems{}).
+		Where("kds_order_id = ? AND name = ? AND created = ?", orderid, name, created).
+		Count(&count)
+	return count > 0
+}
+
 // reconcileRemoteOrderCreated converges the order's Created, and each of its
 // items' Created, to whichever value is earliest between what's already
 // stored locally and what this broadcast carries - never any later value,

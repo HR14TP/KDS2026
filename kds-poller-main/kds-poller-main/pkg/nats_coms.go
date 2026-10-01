@@ -11,6 +11,7 @@ import (
 var NC *nats.Conn
 var NCglobal *nats.Conn
 var conerror error
+var natsLocalPort = 4222
 
 func checkConnections(kdsconfig kdsmodels.KDSConfig, dbLocation string) {
 	//fmt.Println("Checking Connections")
@@ -26,7 +27,7 @@ func checkConnections(kdsconfig kdsmodels.KDSConfig, dbLocation string) {
 }
 
 func initLocalConnection(kdsconfig kdsmodels.KDSConfig, dbLocation string) {
-	NC, conerror = helper.KDSNatsLocalConnect("POLL")
+	NC, conerror = helper.KDSNatsLocalConnectPort("POLL", natsLocalPort)
 	//myerror.HandelGlobalError(conerror, myerror.GetSentryServices().KDSPOLLER)
 	if NC != nil && NC.IsConnected() {
 		fmt.Println("Local Client Connected")

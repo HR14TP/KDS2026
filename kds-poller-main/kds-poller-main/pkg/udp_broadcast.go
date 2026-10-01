@@ -97,6 +97,77 @@ func broadcastNewOrder(db *gorm.DB, orderID int) {
 	}()
 }
 
+// broadcastNewItemsOnOrder tells every other KDS terminal on the LAN that
+// itemIDs were just added to an order that already exists on every
+// terminal's own copy (see ProcessMessage's existing-order branch in
+// engine.go) - mirrors broadcastNewOrder, but for the "item added to an
+// already-open ticket" case, which previously had no broadcast at all: a
+// terminal that doesn't independently ingest this exact ticket (e.g. a
+// Head Chef/monitor terminal, or simply a different prep station whose own
+// copy of this order was created by broadcastNewOrder earlier) would only
+// ever learn about the order's items as of the moment it was first
+// created, never anything added after that.
+func broadcastNewItemsOnOrder(db *gorm.DB, orderID int, itemIDs []int) {
+	if len(itemIDs) == 0 {
+		return
+	}
+	var order kdsmodels.KDSOrders
+	db.Where("id = ?", orderID).First(&order)
+	if order.ID == 0 || order.Reference == "" {
+		return
+	}
+	var items []kdsmodels.KDSItems
+	db.Where("id IN ?", itemIDs).Find(&items)
+	if len(items) == 0 {
+		return
+	}
+	for i := range items {
+		db.Where("kds_item_id = ?", items[i].ID).Find(&items[i].SubItems)
+		db.Where("id = ?", items[i].KDSScreenID).Find(&items[i].Screen)
+	}
+
+	payload := kdsmodels.KDSNewItemsOnOrder{Reference: order.Reference, Items: items}
+	payloadjs, err := json.Marshal(&payload)
+	if err != nil {
+		fmt.Println("udp broadcast: marshal new order items failed: ", err)
+		return
+	}
+	envelope := udpEnvelope{Type: "neworderitemsremote", Serial: udpInstanceID, Data: payloadjs}
+	js, err := json.Marshal(envelope)
+	if err != nil {
+		fmt.Println("udp broadcast: marshal envelope failed: ", err)
+		return
+	}
+
+	go func() {
+		conn, err := net.ListenPacket("udp4", ":0")
+		if err != nil {
+			fmt.Println("udp broadcast: socket failed: ", err)
+			return
+		}
+		defer conn.Close()
+		if udpConn, ok := conn.(*net.UDPConn); ok {
+			if rawConn, err := udpConn.SyscallConn(); err == nil {
+				rawConn.Control(func(fd uintptr) {
+					syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1)
+				})
+			}
+		}
+		targets := []net.IP{net.IPv4bcast}
+		targets = append(targets, localSubnetBroadcastAddresses()...)
+		targets = append(targets, localSubnetHostAddresses()...)
+		sent := 0
+		for _, ip := range targets {
+			dest := &net.UDPAddr{IP: ip, Port: udpDiscoveryPort}
+			if _, err := conn.WriteTo(js, dest); err != nil {
+				continue
+			}
+			sent++
+		}
+		fmt.Printf("udp broadcast: new order items to %d/%d target(s)\n", sent, len(targets))
+	}()
+}
+
 // localSubnetBroadcastAddresses and localSubnetHostAddresses are copied
 // verbatim from kds-webserver's pkg/udp_discovery.go - see the comments
 // there for why the host sweep exists (some networks silently drop both

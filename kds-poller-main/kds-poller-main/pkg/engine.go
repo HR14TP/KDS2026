@@ -564,6 +564,7 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 		}
 	} // end voids
 
+	var newlyCreatedItemIDs []int
 	for j := range obj.Items { // PROCESS ITEMS
 		if len(obj.Items[j].Name) > 0 {
 			var newMain kdsmodels.KDSItems
@@ -589,6 +590,9 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 			newMain.PrepSecs = 0
 			newMain.SubOrder = suborderforitems
 			db.Create(&newMain)
+			if newMain.ID > 0 {
+				newlyCreatedItemIDs = append(newlyCreatedItemIDs, newMain.ID)
+			}
 
 			if newMain.ID > 0 {
 				for k := range obj.Items[j].Subs {
@@ -612,6 +616,16 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 		// that shows this ticket, including a terminal (an Order Display
 		// Screen) that never ingests tickets itself at all.
 		broadcastNewOrder(db, obj.Neworder.ID)
+	} else {
+		// A later round on an already-existing order (e.g. a second trip to
+		// the same table) previously had no broadcast at all - a terminal
+		// that isn't independently ingesting this exact ticket (any prep
+		// station other than the one whose own poller just parsed this
+		// round, or a monitor/Head Chef terminal) would only ever know
+		// about the order's items as of whenever it was first created.
+		// Mirrors broadcastNewOrder's reasoning, scoped to just the items
+		// actually added this round rather than the whole order.
+		broadcastNewItemsOnOrder(db, obj.Neworder.ID, newlyCreatedItemIDs)
 	}
 	obj.Itemadded = true
 	if obj.Itemadded {

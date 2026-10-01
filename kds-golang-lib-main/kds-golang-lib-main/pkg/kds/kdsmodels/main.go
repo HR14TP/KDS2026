@@ -392,6 +392,20 @@ type KDSOrderScreenRecall struct {
 	Passmode  bool   `json:"passmode"`
 }
 
+// KDSNewItemsOnOrder is the peer-sync payload for items added to an order
+// that already exists on every terminal's own copy (see kds-poller's
+// broadcastNewItemsOnOrder) - unlike a brand new order (broadcastNewOrder),
+// this never creates a new order row on the receiving end, only appends
+// Items to whichever local order already matches Reference. KDSScreenID on
+// each item is a local foreign key, not portable between terminals' own
+// databases, so the receiving end re-resolves each item's screen by name
+// (Screen.Name), same as applyNewOrderRemote already does for a new order's
+// own items.
+type KDSNewItemsOnOrder struct {
+	Reference string     `json:"reference"`
+	Items     []KDSItems `json:"items"`
+}
+
 // KDSScreenPassAssignment is the peer-sync payload announcing which pass
 // terminal (if any) bumps a given screen's orders - see
 // announceOwnScreenPassAssignment in kds-webserver-main.

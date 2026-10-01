@@ -124,7 +124,21 @@ func applyCloseRemoteItem(remoteItem kdsmodels.KDSItems) {
 	}
 }
 
+// closeItemsHandler marks a single item complete (the "Only the Head Chef
+// pass KDS may mark an item Complete" requirement) - the frontend already
+// refuses to make this call on a non-pass terminal (KDS.close_item's own
+// passmode check), but that's only a UI courtesy; without the matching
+// check here, anything able to reach this terminal's own local HTTP API
+// directly could still mark an item complete on a section terminal. This
+// never gates the remote-sync path (closeRemoteItemHandler/
+// applyCloseRemoteItem, a different endpoint) - a peer's already-validated
+// close must still apply to this terminal's own mirrored copy regardless of
+// this terminal's own passmode setting.
 func closeItemsHandler(w http.ResponseWriter, r *http.Request) {
+	if !ENV.Config.Flags.Passmode {
+		http.Error(w, "only the pass terminal may mark an item complete", http.StatusForbidden)
+		return
+	}
 	vars := mux.Vars(r)
 	itemid := vars["id"]
 	item := kdsmodels.KDSItems{}

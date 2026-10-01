@@ -599,6 +599,16 @@ KDS.clear_production = function(id) {
 // trips back through KDS.nats.update_order, same flow as every other
 // per-item action here (mark_production/clear_production/close_item).
 KDS.send_to_table = function(id) {
+	// Only the pass mode terminal can send an item to the table - same
+	// restriction, same reasoning as KDS.close_item's own passmode check.
+	// The backend enforces this independently (senditemtotable rejects a
+	// non-pass terminal's call outright) - this is just the matching UI
+	// courtesy so a section terminal gets an immediate explanation instead
+	// of a silently-failed request.
+	if (!KDS.flagcheck("passmode")) {
+		alert("Only the pass terminal can send an item to the table.");
+		return;
+	}
 	var xmlHttp = new XMLHttpRequest();
 	xmlHttp.onreadystatechange = function() {
 		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){

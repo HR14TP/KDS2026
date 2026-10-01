@@ -18,7 +18,14 @@ var KDSConfig kdsmodels.KDSConfig
 
 func main() {
 	baseLocation := flag.String("base", "/opt/kds/", "Base KDS Location")
+	// See kds-webserver-main's own -natsport flag and KDSNatsLocalConnectPort's
+	// doc comment - same local-testing reasoning: production always runs
+	// exactly one poller + one kdsnats per terminal on the default port, this
+	// exists purely so a second terminal's full stack can run on the same
+	// machine without a port clash.
+	natsPort := flag.Int("natsport", 4222, "Local NATS port")
 	flag.Parse()
+	natsLocalPort = *natsPort
 	FileLocation, ConfigLocation, DBLocation = buildConfig(*baseLocation)
 	fmt.Println("Starting Poller")
 	KDSConfig = LoadConfiguration(ConfigLocation)

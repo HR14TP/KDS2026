@@ -239,7 +239,16 @@ func applyClearProductionRemote(item kdsmodels.KDSItems) {
 // already COMPLETE - the frontend only ever shows the button in that state,
 // but the status check here is the actual guard against it firing on
 // anything else.
+//
+// "Only the Head Chef pass KDS may mark an item Complete and then Sent to
+// table" - same requirement, same reasoning as closeItemsHandler's own
+// passmode check. Unlike closing an item, this one previously had no
+// restriction anywhere, frontend or backend.
 func sendItemToTableHandler(w http.ResponseWriter, r *http.Request) {
+	if !ENV.Config.Flags.Passmode {
+		http.Error(w, "only the pass terminal may send an item to the table", http.StatusForbidden)
+		return
+	}
 	vars := mux.Vars(r)
 	itemid := vars["id"]
 	item := kdsmodels.KDSItems{}

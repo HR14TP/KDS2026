@@ -133,6 +133,12 @@ func handleUDPEnvelope(raw []byte) {
 			applyNewOrderRemote(order)
 			notifyKDSOrders()
 		}
+	case "neworderitemsremote":
+		var payload kdsmodels.KDSNewItemsOnOrder
+		if err := json.Unmarshal(envelope.Data, &payload); err == nil {
+			applyNewOrderItemsRemote(payload)
+			notifyKDSOrders()
+		}
 	case "closeorderremote":
 		var order kdsmodels.KDSOrders
 		if err := json.Unmarshal(envelope.Data, &order); err == nil {
