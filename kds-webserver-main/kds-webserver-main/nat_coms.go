@@ -709,12 +709,20 @@ func createVoidItems(sallyMainItem kdsmodels.SallyMainItems, existingitem kdsmod
 }
 
 func processSallyMainItem(sallyOrder kdsmodels.SallyOrder, orderid int, isneworder bool) {
+	// itemNameOccurrenceSoFar/subNameOccurrenceSoFar disambiguate same-named
+	// items/subitems within this one incoming Sally round, the same way
+	// itemOccurrenceInOrder ranks by local id order - the Sally wire format
+	// itself carries no occurrence, so it's derived fresh each round from
+	// each item/subitem's own rank among same-named siblings seen so far in
+	// THIS payload's own item order. See getItemSally/getSubItemSally.
+	itemNameOccurrenceSoFar := map[string]int{}
 	for g := range sallyOrder.Items {
 		isvoid := false
 		if sallyOrder.Items[g].Qty < 0 {
 			isvoid = true
 		}
-		existingitem := getItemSally(orderid, sallyOrder.Items[g])
+		itemNameOccurrenceSoFar[sallyOrder.Items[g].Name]++
+		existingitem := getItemSally(orderid, sallyOrder.Items[g], itemNameOccurrenceSoFar[sallyOrder.Items[g].Name])
 		if existingitem.ID > 0 && !isneworder {
 			createvoiditems := false
 			spew.Dump("ITEM EXISTS")
@@ -736,8 +744,10 @@ func processSallyMainItem(sallyOrder kdsmodels.SallyOrder, orderid int, isneword
 
 			existingitem.KDSScreenID = screen.ID
 			saveSallyItem(existingitem)
+			subNameOccurrenceSoFar := map[string]int{}
 			for j := range sallyOrder.Items[g].SubItems {
-				existingsubitem := getSubItemSally(existingitem.ID, sallyOrder.Items[g].SubItems[j])
+				subNameOccurrenceSoFar[sallyOrder.Items[g].SubItems[j].Name]++
+				existingsubitem := getSubItemSally(existingitem.ID, sallyOrder.Items[g].SubItems[j], subNameOccurrenceSoFar[sallyOrder.Items[g].SubItems[j].Name])
 				if existingsubitem.ID > 0 {
 					spew.Dump("SUB ITEM EXISTS")
 					issubvoid := false
@@ -833,8 +843,10 @@ func processSallyMainItem(sallyOrder kdsmodels.SallyOrder, orderid int, isneword
 					newsubitem.Status = newitem.Status
 					saveSallySubItem(newsubitem)
 				}
+				newItemSubNameOccurrenceSoFar := map[string]int{}
 				for j := range sallyOrder.Items[g].SubItems {
-					existingsubitem := getSubItemSally(newitem.ID, sallyOrder.Items[g].SubItems[j])
+					newItemSubNameOccurrenceSoFar[sallyOrder.Items[g].SubItems[j].Name]++
+					existingsubitem := getSubItemSally(newitem.ID, sallyOrder.Items[g].SubItems[j], newItemSubNameOccurrenceSoFar[sallyOrder.Items[g].SubItems[j].Name])
 					if existingsubitem.ID > 0 {
 						spew.Dump("SUB ITEM EXISTS")
 						existingsubitem.Name = sallyOrder.Items[g].SubItems[j].Name

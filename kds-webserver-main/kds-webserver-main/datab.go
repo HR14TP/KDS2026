@@ -117,16 +117,63 @@ func getScreenSally(name string) kdsmodels.KDSScreens {
 	return screen
 }
 
-func getItemSally(orderid int, sallyitem kdsmodels.SallyMainItems) kdsmodels.KDSItems {
-	var item kdsmodels.KDSItems
-	ENV.DB.Where("kds_order_id = ?", orderid).Where("name = ?", sallyitem.Name).Where("status != ?", "COMPLETE").First(&item)
-	return item
+// getItemSally resolves which of this order's items a Sally (POS) update for
+// sallyitem.Name actually refers to, the same "occurrence" way
+// getDatabaseItemByOccurrence already does for every other cross-terminal
+// item-identity lookup in this codebase (close/production/DUP* handlers) -
+// occurrence is the item's 1-based rank, by id ASC (creation order), among
+// this order's own not-yet-COMPLETE items sharing that name. Deliberately
+// NOT scoped by Qty (unlike getDatabaseItemByOccurrence): that function
+// matches an already-fully-formed item snapshot broadcast between
+// terminals, where qty is assumed stable, whereas this one is reconciling
+// an evolving order against a fresh POS round whose whole point can be a
+// qty change on an existing item - scoping by qty here would make a qty
+// change invisible as "the same item" and wrongly spawn a duplicate.
+//
+// Before this, a name-only, unordered match (GORM's First() with no
+// ORDER BY) meant two same-named items on one order (e.g. two "Rump Steak
+// 300gr", one medium one well done) were indistinguishable: whichever
+// instance the query happened to return first silently absorbed every
+// update meant for the other, including modifiers attached to a specific
+// instance.
+//
+// occurrence must be computed by the caller by counting this item's rank
+// among same-named items already seen earlier in the SAME incoming
+// sallyOrder.Items list (see processSallyMainItem) - the Sally wire format
+// carries no occurrence of its own, so there's nothing to read it from; it
+// has to be derived fresh from the feed's own item ordering each round, the
+// same way itemOccurrenceInOrder derives it from local id ordering.
+//
+// Returns a zero-value KDSItems (ID 0) when occurrence has no matching
+// sibling yet - e.g. a genuinely new second instance of the same dish just
+// added this round - so the caller's existing `existingitem.ID > 0` check
+// correctly falls through to creating a new item instead of reusing a
+// wrong one. Unlike getDatabaseItemByOccurrence, deliberately does NOT fall
+// back to the first sibling out of range: that fallback exists there so a
+// remote status toggle still lands somewhere rather than being silently
+// dropped, which does not apply to a create-vs-update decision here.
+func getItemSally(orderid int, sallyitem kdsmodels.SallyMainItems, occurrence int) kdsmodels.KDSItems {
+	siblings := []kdsmodels.KDSItems{}
+	ENV.DB.Where("kds_order_id = ?", orderid).Where("name = ?", sallyitem.Name).Where("status != ?", "COMPLETE").Order("id ASC").Find(&siblings)
+	if occurrence >= 1 && occurrence <= len(siblings) {
+		return siblings[occurrence-1]
+	}
+	return kdsmodels.KDSItems{}
 }
 
-func getSubItemSally(itemid int, sallysubitem kdsmodels.SallySubItems) kdsmodels.KDSSubitems {
-	var item kdsmodels.KDSSubitems
-	ENV.DB.Where("kds_item_id = ?", itemid).Where("name = ?", sallysubitem.Name).Where("status != ?", "COMPLETE").First(&item)
-	return item
+// getSubItemSally is getItemSally's counterpart for an item's own subitems
+// (modifiers) - same occurrence-by-name-rank reasoning, scoped to one
+// item's own subitems instead of one order's own items. occurrence must be
+// computed by the caller the same way, by counting this subitem's rank
+// among same-named subitems already seen earlier in the SAME incoming
+// sallyOrder.Items[g].SubItems list for this one item.
+func getSubItemSally(itemid int, sallysubitem kdsmodels.SallySubItems, occurrence int) kdsmodels.KDSSubitems {
+	siblings := []kdsmodels.KDSSubitems{}
+	ENV.DB.Where("kds_item_id = ?", itemid).Where("name = ?", sallysubitem.Name).Where("status != ?", "COMPLETE").Order("id ASC").Find(&siblings)
+	if occurrence >= 1 && occurrence <= len(siblings) {
+		return siblings[occurrence-1]
+	}
+	return kdsmodels.KDSSubitems{}
 }
 
 func getDatabaseOrderWithoutStatus(config kdsmodels.KDSConfig, id string) kdsmodels.KDSOrders {

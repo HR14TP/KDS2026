@@ -1769,6 +1769,22 @@ KDS.HTML_update_order_time = function(orderid, thetime){
 // by name *and* production/complete bucket keeps same-name-same-state items
 // compressing into one row (unchanged behavior) while same-name-different-
 // state items each get their own slot.
+//
+// D05: two same-name, same-state items can also carry different modifiers
+// (e.g. one "Rump Steak 300gr" medium, one well done - now correctly kept
+// as distinct backend rows by the D03 occurrence fix in getItemSally/
+// getSubItemSally). Without a modifier signature in this key, both still
+// pooled into one compressed bucket here: HTML_compress_mainitems summed
+// their qty and merged both items' subitems into one shared list, and
+// HTML_GENERATE_ORDER_ITEMS's `done` dedup then skipped rendering the
+// second item outright - the single rendered row showed "2 Rump Steak"
+// with "medium" and "well done" listed together as if they were two
+// modifiers on one dish, instead of two separate one-steak rows each
+// showing its own modifier. Including a sorted name:qty signature of this
+// item's own subitems means only items with the EXACT SAME modifier set
+// still compress together (unchanged behavior for genuinely identical
+// repeats, e.g. two plain "Chips" with no modifiers at all); any
+// difference in modifiers now earns its own row.
 KDS.HTML_compress_key = function(mainitem) {
 	let bucket = 'other';
 	if (mainitem.status === 'OPEN') {
@@ -1776,7 +1792,11 @@ KDS.HTML_compress_key = function(mainitem) {
 	} else if (mainitem.status === 'COMPLETE') {
 		bucket = 'complete';
 	}
-	return mainitem.name + '_' + bucket;
+	let subSignature = (mainitem.subitems || [])
+		.map((subitem) => subitem.name + ':' + subitem.qty)
+		.sort()
+		.join('|');
+	return mainitem.name + '_' + bucket + '_' + subSignature;
 };
 
 KDS.HTML_compress_mainitems = function(order) {
