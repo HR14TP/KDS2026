@@ -69,7 +69,37 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 	extrateller := 8
 	foundOrder := false
 	for scanner.Scan() {
-		text := strings.ToLower(scanner.Text())
+		// D07: some tickets carry a stray leading 0x1D ("group separator")
+		// control byte on certain lines - confirmed on real venue tickets,
+		// always on the first item line and the "vb" end marker, and also
+		// (critically) on a build-your-own dish's deeper option lines (e.g.
+		// "Breakfast Your Way" -> "One Egg, Your Way" -> a further-indented
+		// side choice). stripControlChars already existed for the narrow
+		// transfer-item-name comparison below (lines matched exactly
+		// against "vb"), but every other line in this loop - including the
+		// item/sub-item byte-offset classification in GetItemsMatching -
+		// used the raw, uncleaned text. A control byte in column 0 isn't a
+		// real space, so it doesn't count toward GetItemsMatching's
+		// leading-whitespace checks, but it also isn't absent: the
+		// subsequent spaces visually line up with a deeper indent than a
+		// normal sub-item, yet the byte-offset check only ever looks at
+		// fixed positions (aa[0]..aa[3]) - it can't tell "control byte then
+		// a deeper indent" apart from "no control byte, shallow indent",
+		// and picked the wrong one. Confirmed live: this split a single
+		// "Breakfast Your Way" order into two stray tiles, with the real
+		// side (crispy hash brown) wrongly promoted to its own main item
+		// and absorbing the dish's other sides (bacon, toast, egg white) as
+		// if they were its own, rather than the original dish's.
+		// Stripping control bytes from every line before classification
+		// (not just the transfer-item-name comparison) removes the stray
+		// byte so the real indentation - 2 spaces for a normal sub-item,
+		// more for a deeper build-your-own option - is what the byte-offset
+		// checks actually see. The first item line and "vb" marker are
+		// unaffected: the former is still classified as a new main item
+		// regardless (nothing is open yet), and the latter never matched
+		// any item regex (no digit) whether or not the control byte was
+		// present.
+		text := strings.ToLower(stripControlChars(scanner.Text()))
 
 		// Courses
 		course := GetMatchAndReturn(text, courseReg)
