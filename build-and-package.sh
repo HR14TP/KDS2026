@@ -44,7 +44,7 @@ echo
 echo "== Building kds-webserver (linux/$GOARCH) =="
 cd "$WEBSERVER_DIR"
 go mod tidy
-CGO_ENABLED=0 GOOS=linux GOARCH="$GOARCH" go build -o files/kdswebserver-linux pkg/*.go
+CGO_ENABLED=0 GOOS=linux GOARCH="$GOARCH" go build -o files/kdswebserver-linux .
 echo "-> $WEBSERVER_DIR/files/kdswebserver-linux"
 
 echo
