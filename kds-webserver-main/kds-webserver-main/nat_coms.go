@@ -883,6 +883,17 @@ func ProcessSallyOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	existingorder := getDatabaseOrderOnReference(config, sallyOrder.Id)
+	// D01: a table whose order is fully sent but never explicitly bumped is
+	// a finished meal nobody's gotten around to closing - not a still-open
+	// tab. An update carrying new items for that same reference (e.g. the
+	// POS reusing it for the table's next sitting) is a genuinely new
+	// order, not more of the old one. See kds-poller's own copy of this
+	// same check (engine.go) for the full reasoning. Scoped to updates that
+	// actually carry new items, same as the poller side - an update with no
+	// items isn't trying to start anything new.
+	if existingorder.ID > 0 && len(sallyOrder.Items) > 0 && orderIsFullySentButOpen(existingorder.ID) {
+		existingorder = kdsmodels.KDSOrders{}
+	}
 	if existingorder.ID > 0 {
 		spew.Dump("EXISTING")
 		existingorder.Reference = sallyOrder.Id

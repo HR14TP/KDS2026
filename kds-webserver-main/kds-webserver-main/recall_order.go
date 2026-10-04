@@ -60,7 +60,7 @@ func recallorderHandler(w http.ResponseWriter, r *http.Request) {
 	notifyKDSOrders()
 
 	if order.ID > 0 {
-		recallmsg := kdsmodels.KDSOrderScreenRecall{Reference: order.Reference, Screen: screenname, Passmode: passmode}
+		recallmsg := kdsmodels.KDSOrderScreenRecall{Reference: order.Reference, Screen: screenname, Passmode: passmode, Table: order.Table}
 		json1, _ := json.Marshal(&recallmsg)
 		sendToPeers("recallorderscreenremote", json1)
 		broadcastUDP("recallorderscreenremote", json1)
@@ -88,7 +88,7 @@ func recallOrderScreenRemoteHandler(w http.ResponseWriter, r *http.Request) {
 // that order, it's a no-op. Replays the exact same logic the originating
 // terminal applied, same as applyCloseOrderScreenRemote does for closes.
 func applyRecallOrderScreenRemote(recallmsg kdsmodels.KDSOrderScreenRecall) {
-	orderhere := getDatabaseOrderFromReferenceAnyStatus(recallmsg.Reference)
+	orderhere := getDatabaseOrderFromReferenceAnyStatus(recallmsg.Reference, recallmsg.Table)
 	if orderhere.ID > 0 {
 		if recallmsg.Passmode {
 			recallOrderForPassScreen(orderhere.ID, recallmsg.Screen)

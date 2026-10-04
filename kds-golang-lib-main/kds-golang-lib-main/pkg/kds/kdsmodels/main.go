@@ -390,6 +390,14 @@ type KDSOrderScreenRecall struct {
 	Reference string `json:"reference"`
 	Screen    string `json:"screen"`
 	Passmode  bool   `json:"passmode"`
+	// Table is the order's own Table at the moment this recall was sent -
+	// see D08/getDatabaseOrderFromReferenceAnyStatus's own doc comment for
+	// why: a reference reused later the same day can match more than one
+	// order, and the table a recall actually originated from is the one
+	// piece of context available to disambiguate which one it really
+	// means. Advisory only - a peer that doesn't recognize this field, or
+	// receives it blank, falls back to its prior id-desc-only behavior.
+	Table string `json:"table"`
 }
 
 // KDSNewItemsOnOrder is the peer-sync payload for items added to an order

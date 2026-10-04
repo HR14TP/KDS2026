@@ -338,6 +338,27 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 	//fmt.Println("LOOKING FOR")
 	//fmt.Println(obj.Neworder.Reference)
 	existing := CheckExistingOrder(db, obj.Neworder.Reference)
+	// D01: a table whose order is fully sent (every real item COMPLETE and
+	// physically delivered) but never explicitly bumped is, as far as the
+	// kitchen is concerned, a finished meal that nobody's gotten around to
+	// closing yet - not a still-open tab waiting for more food. The next
+	// ticket carrying new items for that same reference is a genuinely new
+	// order (e.g. the table's next course, or the next diners seated there
+	// if the POS happens to reuse the reference), not more of the old one.
+	// Treating it as existing.ID == 0 here - as if this reference had never
+	// been seen - routes it through the normal brand-new-order path below,
+	// instead of reopening a tile that was already fully delivered and
+	// silently appending unrelated new items onto it. Scoped to tickets
+	// that actually carry new items (len(obj.Items) > 0): a void-only or
+	// transfer ticket targeting this same reference is referring to the
+	// existing tile's own history, not starting a new one, and must still
+	// find it. Scoped away from transfers (!foundTransfer) for the same
+	// reason - a transfer ticket's "existing" lookup here feeds the
+	// transfer-specific fallback below, which has its own, different
+	// handling for a not-found source order.
+	if existing.ID > 0 && !foundTransfer && len(obj.Items) > 0 && orderIsFullySentButOpen(db, existing.ID) {
+		existing = kdsmodels.KDSOrders{}
+	}
 	if existing.ID == 0 && foundTransfer && sourceTableFromTicket != "" {
 		// The ticket's own reference doesn't match any order we know about.
 		// This happens when the tile actually sitting at the source table

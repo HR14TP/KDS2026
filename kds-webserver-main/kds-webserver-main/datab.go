@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
@@ -38,6 +39,34 @@ func getDatabaseOrderOnReference(config kdsmodels.KDSConfig, id string) kdsmodel
 	orders := kdsmodels.KDSOrders{}
 	ENV.DB.Where("status = ?", "OPEN").Where("strftime('%d-%m-%Y',created) = strftime('%d-%m-%Y',CURRENT_TIMESTAMP)"+todayOrDateUnparseable).Where("reference = ?", id).First(&orders)
 	return orders
+}
+
+// orderIsFullySentButOpen reports whether every real item on this order has
+// already been completed and physically sent to the table (Status ==
+// "COMPLETE" and SentToTable == true), even though the order's own Status
+// is still "OPEN" - i.e. everything on the ticket is actually done, but
+// nobody has pressed Close Order (completeOrder only ever fires as a side
+// effect of that explicit action, never from an item reaching
+// COMPLETE/SentToTable on its own - see its own doc comment). Mirrors
+// kds-poller's own copy of this same check (engine.go's hook into
+// ProcessMessage) for the Sally/POS-API ingestion path (ProcessSallyOrder).
+// VOID/TRANSFERRED/COURSE items don't count as "real" either way, and at
+// least one real item is required - see the poller copy's doc comment for
+// why both of those matter.
+func orderIsFullySentButOpen(orderID int) bool {
+	var items []kdsmodels.KDSItems
+	ENV.DB.Where("kds_order_id = ?", orderID).Find(&items)
+	realItems := 0
+	for _, item := range items {
+		if item.Status == "VOID" || item.Status == "TRANSFERRED" || item.Status == "COURSE" {
+			continue
+		}
+		realItems++
+		if !(item.Status == "COMPLETE" && item.SentToTable) {
+			return false
+		}
+	}
+	return realItems > 0
 }
 
 func saveSallyOrder(order kdsmodels.KDSOrders) kdsmodels.KDSOrders {
@@ -403,16 +432,40 @@ func getDatabaseOrderFromReference(reference string) kdsmodels.KDSOrders {
 // without the status=OPEN filter - used for applying a peer's recall to
 // this terminal's own copy, where the whole point is finding an order
 // that's currently COMPLETE (the OPEN-only lookup above would never match
-// it) and reopening it. Ordered by id desc: without the OPEN filter to
-// narrow things down, a reference reused later the same day (rare, but not
-// impossible over a long service) could match more than one row - prefer
-// whichever is most recently created rather than leaving it to an
-// unspecified row order.
-func getDatabaseOrderFromReferenceAnyStatus(reference string) kdsmodels.KDSOrders {
+// it) and reopening it.
+//
+// D08: without the OPEN filter to narrow things down, a reference reused
+// later the same day (rare, but not impossible over a long service - see
+// the ticket/Sally reference schemes' own doc comments, neither guarantees
+// day-wide uniqueness) can match more than one row. Ordered by id desc and
+// preferring whichever candidate's Table matches the caller's - recall is
+// always about one specific physical table's ticket, and the table a
+// recall actually originated from is known at the point it's first sent
+// (see recallorderHandler), so it's the one piece of context available
+// here that can actually distinguish "the order this recall really means"
+// from "some other, unrelated order that happens to share a reference."
+// table is deliberately advisory, not a hard filter: if it's blank (an
+// older peer that hasn't sent it yet) or doesn't match any candidate, this
+// still falls back to the most recent row rather than finding nothing -
+// matching this function's original fail-open design (surfacing a
+// possibly-wrong order is recoverable; silently finding nothing, given
+// this is the only lookup capable of reopening a COMPLETE order at all,
+// is not).
+func getDatabaseOrderFromReferenceAnyStatus(reference string, table string) kdsmodels.KDSOrders {
 	showDebug("getDatabaseOrderFromReferenceAnyStatus")
-	existing := kdsmodels.KDSOrders{}
-	ENV.DB.Where("reference = ?", reference).Where("DATE(kds_orders.created) = DATE(CURRENT_TIMESTAMP, 'localtime')"+todayOrDateUnparseableDATE).Order("id desc").First(&existing)
-	return existing
+	candidates := []kdsmodels.KDSOrders{}
+	ENV.DB.Where("reference = ?", reference).Where("DATE(kds_orders.created) = DATE(CURRENT_TIMESTAMP, 'localtime')"+todayOrDateUnparseableDATE).Order("id desc").Find(&candidates)
+	if len(candidates) == 0 {
+		return kdsmodels.KDSOrders{}
+	}
+	if table != "" {
+		for _, candidate := range candidates {
+			if strings.EqualFold(candidate.Table, table) {
+				return candidate
+			}
+		}
+	}
+	return candidates[0]
 }
 func getDatabaseItemFromNameAndQTY(order kdsmodels.KDSOrders, itemname string, itemqty int, status string) kdsmodels.KDSItems {
 	showDebug("getDatabaseItemFromName")

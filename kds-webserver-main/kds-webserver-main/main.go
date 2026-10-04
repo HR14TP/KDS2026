@@ -158,6 +158,7 @@ func main() {
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/clearproductionremote/", clearProductionRemoteHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/sendtotableremote/", sendToTableRemoteHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/neworderremote/", newOrderRemoteHandler))
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/reconcilesnapshot", reconcileSnapshotHandler))
 
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/sallyorder", ProcessSallyOrder))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/order", ProcessSallyOrder))
@@ -177,6 +178,8 @@ func main() {
 	go asyncUploadOrders()
 
 	go asyncAnnouncePassTerminal()
+
+	go asyncReconcileWithPeers()
 
 	log.Fatal(srv.ListenAndServe())
 }

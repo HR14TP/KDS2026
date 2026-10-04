@@ -19,6 +19,36 @@ func CheckExistingOrder(db *gorm.DB, reference string) kdsmodels.KDSOrders {
 	return order
 }
 
+// orderIsFullySentButOpen reports whether every real item on this order has
+// already been completed and physically sent to the table (Status ==
+// "COMPLETE" and SentToTable == true), even though the order's own Status
+// is still "OPEN" - i.e. everything on the ticket is actually done, but
+// nobody has pressed Close Order (completeOrder in kds-webserver-main only
+// ever fires as a side effect of that explicit action, never from an item
+// reaching COMPLETE/SentToTable on its own). VOID/TRANSFERRED/COURSE items
+// don't count as "real" either way (a void was never going to be sent, a
+// transferred item moved to a different tile's own count, and a COURSE
+// marker was never a delivered item) - excluded on both sides, so a ticket
+// made up entirely of them isn't mistaken for "fully sent" just because
+// there's nothing outstanding to contradict it. Requires at least one real
+// item: a brand-new order that hasn't had any real items attached to it yet
+// is not "done", regardless of what its (nonexistent) items' statuses are.
+func orderIsFullySentButOpen(db *gorm.DB, orderID int) bool {
+	var items []kdsmodels.KDSItems
+	db.Where("kds_order_id = ?", orderID).Find(&items)
+	realItems := 0
+	for _, item := range items {
+		if item.Status == "VOID" || item.Status == "TRANSFERRED" || item.Status == "COURSE" {
+			continue
+		}
+		realItems++
+		if !(item.Status == "COMPLETE" && item.SentToTable) {
+			return false
+		}
+	}
+	return realItems > 0
+}
+
 // FindOpenOrderAtTable finds whichever order is currently open and sitting
 // at the given table, regardless of reference - used as a fallback when a
 // transfer ticket's own reference doesn't match any known order (see
