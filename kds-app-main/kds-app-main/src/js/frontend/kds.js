@@ -501,7 +501,11 @@ KDS.click_restore_order = function(id) {
 KDS.close_item = function(id , orderid) {
 	// Only the pass mode terminal can mark items as complete - prevents
 	// inadvertent marking on non-pass terminals in a multi-terminal setup.
-	if (!KDS.flagcheck("passmode")) {
+	// Standalone terminals are exempt from this: they close their own items
+	// without needing a pass-terminal middleman (see the standalonemode doc
+	// comment on KDS.nats.close_order below), so they're not the
+	// "inadvertent non-pass terminal" case this guard is meant to catch.
+	if (!KDS.flagcheck("passmode") && !KDS.flagcheck("standalonemode")) {
 		alert("Only the pass terminal can mark items as complete.");
 		return;
 	}
@@ -1713,21 +1717,21 @@ KDS.HTML_check_order_valid = function(order) {
 // non-COMPLETE items, for column-layout thresholds), this must stay true for
 // a fully-completed-but-still-open order so its card keeps getting drawn and
 // refreshed in pass mode instead of going stale or never appearing.
+//
+// Product decision: a ticket whose items are all complete on this screen but
+// whose ORDER hasn't been closed yet stays on the main board - gated on
+// order.status, not on any item's own status - so Send to Table and Close
+// Order both stay reachable right where the operator already is. This used
+// to gate on "at least one item on this screen still OPEN" instead, which
+// pulled the tile the instant the last item here completed (Recall Orders
+// was the only way back to it) - that reads as "Close Order isn't working"
+// when there's actually nothing left for this screen to produce, and it
+// silently took the Send to Table button with it before it could be used.
 KDS.HTML_order_belongs_to_screen = function(order) {
 	if (KDS.flagcheck("enableallcenters")) {
 		return order.items.length > 0;
 	}
 	if (KDS.flagcheck("passmode")) {
-		// This used to assume a pass terminal could never land in the "my
-		// own items are done but other screens aren't" state the non-pass
-		// branch below exists for, on the theory that its Close Order is
-		// always all-or-nothing. That's wrong: closeOrderForPassScreen only
-		// force-closes its OWN section, and a genuinely separate terminal
-		// on the same order (e.g. Bar) can easily still be OPEN while this
-		// screen's own items are already done - same as any non-pass
-		// terminal. Filtered to OPEN so the tile disappears once there's
-		// nothing left on THIS screen to bump.
-		//
 		// Deliberately still matches on this screen's own name only, NOT
 		// mainitem.screen.assigned_pass_terminal - every tile-content
 		// renderer (HTML_GENERATE_ORDER_ITEMS and everything downstream of
@@ -1740,20 +1744,14 @@ KDS.HTML_order_belongs_to_screen = function(order) {
 		// terminal's own board only ever shows its own screen's items;
 		// closeOrderForPassScreen's wider section-reach is a closing-time
 		// action, not a display-time one.
-		return order.items.some((mainitem) => KDS.screenMatches(mainitem.screen.name, kdsscreen) && mainitem.status === 'OPEN');
+		return order.status === 'OPEN' && order.items.some((mainitem) => KDS.screenMatches(mainitem.screen.name, kdsscreen));
 	}
 	// A non-pass terminal's Close Order only ever touches its own screen's
 	// items (closeOrderScreenDatabase), so on a multi-screen order it can
 	// genuinely finish its own part while other screens are still working
-	// theirs - the order stays OPEN overall until every screen is done.
-	// Without this OPEN-status check, this terminal's tile for that order
-	// never leaves the board: it already has nothing left to bump (its own
-	// item shows correctly as complete/checked), but the tile itself just
-	// sits there indefinitely since the ORDER hasn't fully closed yet -
-	// reading as "Close Order isn't working" when there's actually nothing
-	// left for this screen to do. Recall Orders (a separate view, scoped by
-	// completed items on this screen) is unaffected and still finds it.
-	return order.items.some((mainitem) => KDS.screenMatches(mainitem.screen.name, kdsscreen) && mainitem.status === 'OPEN');
+	// theirs - the order stays OPEN overall until every screen is done, and
+	// (per the product decision above) so does this screen's own tile.
+	return order.status === 'OPEN' && order.items.some((mainitem) => KDS.screenMatches(mainitem.screen.name, kdsscreen));
 };
 KDS.HTML_update_order_time = function(orderid, thetime){
 	KDS.updateHTML('timer-' + orderid, thetime);
@@ -2393,7 +2391,10 @@ KDS.HTML_GENERATE_ORDER_ITEMS = function(order, numofitemsforthiscreen , checkpr
 	// section at the bottom of the tile (below), rather than just picking
 	// up a badge in place - same "moves to where it belongs" language as
 	// the IN PRODUCTION/COMPLETED split above.
-	let completeHtml = renderGroup((mainitem) => mainitem.status === 'COMPLETE' && mainitem.sent_to_table !== true, true);
+	// Send to Table is pass-terminal-only on the backend (sendItemToTableHandler
+	// rejects anything else outright) - standalone/plain screens never get this
+	// button at all rather than one that always 403s (see KDS.send_to_table).
+	let completeHtml = renderGroup((mainitem) => mainitem.status === 'COMPLETE' && mainitem.sent_to_table !== true, KDS.flagcheck("passmode"));
 	if (completeHtml.length > 0) {
 		str += '<hr class="sectiondivider" />';
 		str += '<div class="sectiongroup sectiongroup-complete"><div class="sectionheading sectionheading-complete">' + (completeCount - sentToTableCount) + ' COMPLETED</div>' + completeHtml + '</div>';

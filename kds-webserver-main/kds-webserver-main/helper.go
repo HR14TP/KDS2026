@@ -48,7 +48,30 @@ func LoadConfiguration(file string) kdsmodels.KDSConfig {
 	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&config)
+	normalizeStandaloneMode(&config)
 	return config
+}
+
+// normalizeStandaloneMode re-asserts the mutual exclusivity the Electron
+// Client Config UI already enforces at save time (saveConfig/
+// ApplyStandaloneMode in frontend.js: standalone forces passmode off and
+// clears the assigned pass terminal) - but that's a UI-layer guarantee only,
+// good for exactly as long as kdsconfig.json is never written any other
+// way. If it's ever hand-edited, restored from a stale backup, or someday
+// written by code that isn't saveConfig, nothing server-side stopped
+// Standalonemode=true coexisting with a non-empty Passterminal/Passmode -
+// which would leave isDeferredToPassTerminal (close_order.go) treating this
+// screen as genuinely assigned to a pass terminal while this terminal's own
+// frontend simultaneously behaves as standalone, scoped inconsistently
+// against each other. Since every config read in this process funnels
+// through LoadConfiguration (GetconfigHandler, announceOwnScreenPassAssignment,
+// announceAsPassTerminal), this is the one place to re-assert it regardless
+// of how the file on disk got into that state.
+func normalizeStandaloneMode(c *kdsmodels.KDSConfig) {
+	if c.Flags.Standalonemode {
+		c.Flags.Passmode = false
+		c.Client.Passterminal = ""
+	}
 }
 func fixDateTime(column string) string {
 	timeStamp, err := time.Parse("2006-01-02T15:04:05Z", column)

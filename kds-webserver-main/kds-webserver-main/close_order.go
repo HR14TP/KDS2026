@@ -135,7 +135,13 @@ func applyCloseRemoteItem(remoteItem kdsmodels.KDSItems) {
 // close must still apply to this terminal's own mirrored copy regardless of
 // this terminal's own passmode setting.
 func closeItemsHandler(w http.ResponseWriter, r *http.Request) {
-	if !ENV.Config.Flags.Passmode {
+	// Standalone terminals also close their own items without a pass
+	// terminal middleman (see the standalonemode doc comment on
+	// KDS.nats.close_order in kds.js) - they're not pass terminals, but
+	// they're not the "inadvertent non-pass terminal in a multi-terminal
+	// setup" this check exists to block either, so they get the same
+	// access as passmode here.
+	if !ENV.Config.Flags.Passmode && !ENV.Config.Flags.Standalonemode {
 		http.Error(w, "only the pass terminal may mark an item complete", http.StatusForbidden)
 		return
 	}

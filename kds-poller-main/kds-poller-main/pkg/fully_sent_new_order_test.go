@@ -92,7 +92,12 @@ func TestProcessMessage_FullySentOrderStartsFreshOnNextTicketWithItems(t *testin
 	}
 }
 
-func TestProcessMessage_StillOpenOrderAppendsNormally(t *testing.T) {
+// Product decision 2026-10-04: a still-open order's next round of items now
+// gets its own fresh tile instead of merging into the original one - see
+// the "new round gets its own tile" comment in ProcessMessage (engine.go).
+// This replaces the old merge-in-place expectation this test used to
+// assert (same ticket fixtures, opposite outcome).
+func TestProcessMessage_StillOpenOrderGetsItsOwnNewTileForNextRound(t *testing.T) {
 	_, dbPath := setupPollerTestDB(t)
 	DBLocation = dbPath
 	FileLocation = t.TempDir()
@@ -100,7 +105,8 @@ func TestProcessMessage_StillOpenOrderAppendsNormally(t *testing.T) {
 	obj := kdsmodels.KDSPollObject{}
 	obj.Config = kdsmodels.KDSConfig{}
 	ProcessMessage(obj, []byte(d01Round1Ticket), FileLocation, dbPath)
-	// Deliberately NOT marking the burger complete/sent.
+	// Deliberately NOT marking the burger complete/sent - this order is a
+	// perfectly ordinary still-open tab, not the D01 fully-sent case.
 
 	ProcessMessage(obj, []byte(d01Round2Ticket), FileLocation, dbPath)
 
@@ -110,19 +116,84 @@ func TestProcessMessage_StillOpenOrderAppendsNormally(t *testing.T) {
 	}
 	defer closeConnection(db)
 
+	var firstOrder kdsmodels.KDSOrders
+	if err := db.Where("reference = ?", "a1.1").First(&firstOrder).Error; err != nil {
+		t.Fatal(err)
+	}
 	var orders []kdsmodels.KDSOrders
-	if err := db.Where("reference = ?", "a1.1").Find(&orders).Error; err != nil {
+	if err := db.Where("reference LIKE ?", "a1.1%").Find(&orders).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(orders) != 2 {
+		t.Fatalf("expected the original order plus a fresh tile for round 2, got %d order(s): %+v", len(orders), orders)
+	}
+
+	var firstOrderItems []kdsmodels.KDSItems
+	if err := db.Where("kds_order_id = ?", firstOrder.ID).Find(&firstOrderItems).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(firstOrderItems) != 1 || firstOrderItems[0].Name != "burger" {
+		t.Fatalf("the original order must still only have its own burger, untouched by round 2, got %+v", firstOrderItems)
+	}
+
+	var roundOrder kdsmodels.KDSOrders
+	for _, o := range orders {
+		if o.ID != firstOrder.ID {
+			roundOrder = o
+		}
+	}
+	if roundOrder.ID == 0 {
+		t.Fatal("expected a second order for round 2")
+	}
+	if roundOrder.Reference != "a1.1-R1" {
+		t.Fatalf("expected the new tile's reference derived from the original with a round suffix, got %q", roundOrder.Reference)
+	}
+	if roundOrder.Table != firstOrder.Table || roundOrder.Status != "OPEN" {
+		t.Fatalf("expected the new tile to carry the same table and be OPEN, got %+v", roundOrder)
+	}
+	var roundItems []kdsmodels.KDSItems
+	if err := db.Where("kds_order_id = ?", roundOrder.ID).Find(&roundItems).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(roundItems) != 1 || roundItems[0].Name != "pizza" {
+		t.Fatalf("expected the new item to land on the new round's own tile, got %+v", roundItems)
+	}
+}
+
+func TestProcessMessage_VoidOnlyTicketStillMergesIntoExistingOrder(t *testing.T) {
+	_, dbPath := setupPollerTestDB(t)
+	DBLocation = dbPath
+	FileLocation = t.TempDir()
+
+	obj := kdsmodels.KDSPollObject{}
+	obj.Config = kdsmodels.KDSConfig{}
+	ProcessMessage(obj, []byte(d01Round1Ticket), FileLocation, dbPath)
+
+	// A void-only ticket for the same reference carries no new items - it
+	// must still find and mark the existing burger, not get swept into the
+	// new-round-gets-its-own-tile path (which is scoped to tickets that
+	// actually carry new items).
+	voidTicket := " * dine in *\n" +
+		"table 9\n" +
+		"* * kitchen * *\n" +
+		"ipad3/sam\n" +
+		"10:22 pm a1.1\n" +
+		"voided item\n" +
+		"1 x burger\n" +
+		"\x1dvb\x00\n"
+	ProcessMessage(obj, []byte(voidTicket), FileLocation, dbPath)
+
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeConnection(db)
+
+	var orders []kdsmodels.KDSOrders
+	if err := db.Where("reference LIKE ?", "a1.1%").Find(&orders).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(orders) != 1 {
-		t.Fatalf("a still-open order must keep receiving round 2's items, not fork into a second order, got %d orders", len(orders))
-	}
-
-	var items []kdsmodels.KDSItems
-	if err := db.Where("kds_order_id = ?", orders[0].ID).Find(&items).Error; err != nil {
-		t.Fatal(err)
-	}
-	if len(items) != 2 {
-		t.Fatalf("expected pizza appended to the same still-open order, got %d items: %+v", len(items), items)
+		t.Fatalf("a void-only ticket must never spin up its own new tile, got %d order(s): %+v", len(orders), orders)
 	}
 }

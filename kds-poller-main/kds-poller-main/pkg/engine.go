@@ -511,24 +511,70 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 				sourceItem.Status = "TRANSFERRED"
 				db.Save(&sourceItem)
 			}
-		} else {
-			if foundTransfer {
-				//whole table transfer (no items on this ticket) - every item
-				//already on the order is moving together, so just relabel
-				//the existing order/tile in place. Same tile, not a new one,
-				//so TransferNote needs setting explicitly here too - the
-				//line-item path only sets it once at the NEW child tile's
-				//creation, which never happens for a whole-table move.
-				//Without this the frontend's transfer banner (gated on
-				//order.transfer_note being non-empty) never appears even
-				//though the ticket clearly said "transferred to".
-				sourceTable := existing.Table
-				existing.Table = obj.Neworder.Table
-				existing.TransferNote = "transferred from " + sourceTable
-			}
+		} else if foundTransfer {
+			//whole table transfer (no items on this ticket) - every item
+			//already on the order is moving together, so just relabel
+			//the existing order/tile in place. Same tile, not a new one,
+			//so TransferNote needs setting explicitly here too - the
+			//line-item path only sets it once at the NEW child tile's
+			//creation, which never happens for a whole-table move.
+			//Without this the frontend's transfer banner (gated on
+			//order.transfer_note being non-empty) never appears even
+			//though the ticket clearly said "transferred to".
+			sourceTable := existing.Table
+			existing.Table = obj.Neworder.Table
+			existing.TransferNote = "transferred from " + sourceTable
 			obj.Neworder = existing
 			db.Save(&obj.Neworder)
 			obj.Neworder.SubOrders++
+			suborderforitems = GetSubOrderForItems(db, obj.Neworder.ID, obj.Screenkds.ID)
+			suborderforitems++
+		} else if len(obj.Items) > 0 {
+			// Product decision: a ticket reusing an already-open order's own
+			// reference (a new round fired for the same table/check) gets
+			// its own fresh tile for just this round's items, rather than
+			// being merged into the original tile - the original tile's
+			// own items are left exactly as they are. This replaces the
+			// older merge-in-place behavior (see TestProcessMessage_
+			// StillOpenOrderAppendsNormally's git history for that prior
+			// behavior and its own reasoning). Scoped to tickets that
+			// actually carry new items - a void-only ticket referencing an
+			// already-open order has nothing to put on a new tile, and must
+			// still fall through to the plain-merge branch below so its
+			// void can find the existing item on the existing tile.
+			//
+			// The new tile's reference is derived from existing.SubOrders
+			// (incremented on the ORIGINAL order, not a fresh local
+			// counter) rather than e.g. NewOrderForToday - every terminal
+			// runs its own poller independently against the same ticket
+			// feed with no cross-machine coordination, so the suffix must
+			// come only from data every terminal computes identically from
+			// this same ticket: the prior round count already stored on
+			// the (by now already-synced, see D06) original order. Same
+			// reasoning as the "-XFER" suffix above.
+			existing.SubOrders++
+			db.Save(&existing)
+			roundOrder := kdsmodels.KDSOrders{}
+			roundOrder.Status = "OPEN"
+			roundOrder.PassStatus = "OPEN"
+			roundOrder.Table = obj.Neworder.Table
+			roundOrder.Waiter = obj.Neworder.Waiter
+			roundOrder.Profile = obj.Neworder.Profile
+			roundOrder.Created = helper.UtilgetTimeSQL()
+			ordercounter := NewOrderForToday(db)
+			ordercounter++
+			roundOrder.OrderFortoday = ordercounter
+			roundOrder.Reference = fmt.Sprintf("%s-R%d", existing.Reference, existing.SubOrders)
+			db.Create(&roundOrder)
+			obj.Neworder = roundOrder
+			wasNewOrder = true
+		} else {
+			// Void-only ticket (or some other items-less update) referencing
+			// an already-open order - nothing new to give its own tile, so
+			// this still needs the plain merge-in-place path: apply it
+			// against the existing tile, exactly as before this change.
+			obj.Neworder = existing
+			db.Save(&obj.Neworder)
 			suborderforitems = GetSubOrderForItems(db, obj.Neworder.ID, obj.Screenkds.ID)
 			suborderforitems++
 		}

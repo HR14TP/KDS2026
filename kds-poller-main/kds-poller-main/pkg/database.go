@@ -67,15 +67,16 @@ func FindOpenOrderAtTable(db *gorm.DB, table string) kdsmodels.KDSOrders {
 // OpenOrderFamilyIDs returns the given order's own ID plus the IDs of any
 // still-open transfer-child tiles spun off from the same original
 // reference (identifiable by the "-XFER-" suffix ProcessMessage gives a
-// newly-created transfer tile's reference, see engine.go) - used so an
-// action addressed by the ORIGINAL ticket reference (e.g. a void, which
-// carries no transfer info of its own) can still find an item that has
-// since moved to one of those child tiles, instead of only ever looking at
-// the original order.
+// newly-created transfer tile's reference, see engine.go), and any
+// still-open round tiles spun off the same way (the "-RN" suffix a new
+// round's own tile gets, same file) - used so an action addressed by the
+// ORIGINAL ticket reference (e.g. a void, which carries no round/transfer
+// info of its own) can still find an item that has since moved to one of
+// those child tiles, instead of only ever looking at the original order.
 func OpenOrderFamilyIDs(db *gorm.DB, familyReference string, primaryOrderID int) []int {
 	ids := []int{primaryOrderID}
 	var children []kdsmodels.KDSOrders
-	db.Where("reference LIKE ?", familyReference+"-XFER%").
+	db.Where("reference LIKE ? OR reference LIKE ?", familyReference+"-XFER%", familyReference+"-R%").
 		Where("status = ?", "OPEN").
 		Find(&children)
 	for _, c := range children {
