@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/nats-io/nats.go"
 )
 
 type SallyOrder struct {
@@ -81,6 +83,8 @@ func main() {
 	file := flag.String("file", "", "Path to a JSON file with one order object or an array of order objects to send verbatim (skips random generation)")
 	ticketFile := flag.String("ticket-file", "", "Path to a raw ticket/print-feed text file, parsed the same way kds-poller parses a real ticket and sent as one order (skips random generation and -file)")
 	screen := flag.String("screen", "Kitchen", "Product center/screen to use for a -ticket-file order when the ticket text doesn't carry its own screen marker")
+	natsRaw := flag.Bool("nats", false, "With -ticket-file, publish the file's raw bytes to NATS subject 'incoming' on -nats-addr instead of parsing locally and POSTing JSON to /order. This hands the bytes to the target terminal's own kds-poller, exercising its real parser exactly like a live print feed - instead of this tool's ported copy of that logic - so it also goes through kds-poller's normal order merge/void/transfer handling.")
+	natsAddr := flag.String("nats-addr", "127.0.0.1:4222", "Address of the target terminal's local NATS server (used with -nats). Each terminal in a multi-terminal rig may run its own local NATS on a different port - point this at the terminal whose kds-poller should parse the ticket.")
 	table := flag.String("table", "", "Table name for generated orders (random if omitted)")
 	waiter := flag.String("waiter", "", "Waiter name for generated orders (random if omitted)")
 	itemCount := flag.Int("items", 0, "Number of line items per generated order (0 = random 1-4)")
@@ -111,6 +115,15 @@ func main() {
 		if err != nil {
 			log.Fatalf("reading %s: %v", *ticketFile, err)
 		}
+
+		if *natsRaw {
+			if err := publishRawTicket(*natsAddr, data, *verbose); err != nil {
+				log.Fatalf("publishing to nats://%s: FAILED: %v", *natsAddr, err)
+			}
+			log.Printf("published %d byte(s) to nats://%s subject \"incoming\" - kds-poller on that terminal will parse it", len(data), *natsAddr)
+			return
+		}
+
 		order := ticketToSallyOrder(parseTicketText(string(data)), *screen)
 		if err := sendOrder(client, *host, order, *verbose); err != nil {
 			log.Fatalf("order %s: FAILED: %v", order.Id, err)
@@ -257,6 +270,29 @@ func sendOrder(client *http.Client, host string, order SallyOrder, verbose bool)
 		return fmt.Errorf("server returned %s: %s", resp.Status, string(respBody))
 	}
 	return nil
+}
+
+// publishRawTicket hands raw ticket/print-feed bytes to the target
+// terminal's local NATS on subject "incoming" - the same subject and same
+// unparsed bytes a real print-feed capture publishes (see
+// kds-poller-main/pkg/nats_coms.go's "incoming" subscription). kds-poller's
+// own ProcessMessage parses it from there, so this takes the real parser
+// (and its order merge/void/table-transfer handling) instead of the
+// parsing logic duplicated in ticket_text.go.
+func publishRawTicket(addr string, data []byte, verbose bool) error {
+	nc, err := nats.Connect(fmt.Sprintf("nats://%s", addr), nats.Timeout(10*time.Second))
+	if err != nil {
+		return err
+	}
+	defer nc.Close()
+
+	if verbose {
+		fmt.Printf("-> NATS PUB incoming (%d bytes) @ nats://%s\n", len(data), addr)
+	}
+	if err := nc.Publish("incoming", data); err != nil {
+		return err
+	}
+	return nc.Flush()
 }
 
 func doPing(client *http.Client, host string, verbose bool) error {

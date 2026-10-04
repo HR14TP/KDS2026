@@ -20,3 +20,11 @@ kds-webserver-main/kds-webserver-main/kds-webserver
 kds-poller-main/kds-poller-main/files/kdspoller-linux
 kds-webserver-main/kds-webserver-main/files/kdswebserver-linux
 kds-webserver-main/kds-webserver-main/files/kdswebserver-linux-v2-NEW
+kds-app-main/kds-app-main/out/
+
+# Distribution update packages - rebuild via build-and-package.sh, only the
+# install scripts are tracked (same convention as kds2024-update-package/)
+KDSupdate*/*.deb
+KDSupdate*/kdspoller-linux
+KDSupdate*/kdswebserver-linux
+KDSupdate*.zip

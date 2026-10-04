@@ -155,7 +155,16 @@
       <textarea id="ticketBox" spellcheck="false" placeholder="Paste the raw text a POS ticket would print - table, staff, items etc. This is parsed the same way kds-poller parses a real print feed."></textarea>
       <div class="dropzone" id="ticketDropzone">Drop a .txt file here, or <label style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse<input type="file" id="ticketFileInput" accept=".txt,text/plain" style="display:none"></label></div>
       <div class="grid-fields" style="grid-template-columns: 1fr;">
-        <div class="field"><label>Fallback product center / screen (used only if the ticket has no "* * SCREEN * *" marker)</label><input id="ticketScreen" type="text" value="Kitchen"></div>
+        <div class="field"><label>Fallback product center / screen (used only if the ticket has no "* * SCREEN * *" marker, and only outside NATS mode below)</label><input id="ticketScreen" type="text" value="Kitchen"></div>
+      </div>
+      <div class="row" style="align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;">
+          <input type="checkbox" id="ticketNatsMode">
+          Send as raw text via NATS (real kds-poller parser, instead of this tool's copy)
+        </label>
+      </div>
+      <div class="grid-fields" id="ticketNatsFields" style="grid-template-columns: 1fr; display:none;">
+        <div class="field"><label>Target terminal's local NATS address</label><input id="ticketNatsAddr" type="text" value="127.0.0.1:4222"></div>
       </div>
       <div class="row">
         <button class="secondary" id="previewTicketBtn">Preview parsed order</button>
@@ -292,6 +301,31 @@ document.getElementById('clearTicketBtn').addEventListener('click', () => {
   document.getElementById('ticketPreview').style.display = 'none';
 });
 
+const ticketNatsMode = document.getElementById('ticketNatsMode');
+const ticketNatsFields = document.getElementById('ticketNatsFields');
+const ticketNatsAddr = document.getElementById('ticketNatsAddr');
+ticketNatsAddr.value = localStorage.getItem('kds-injector-nats-addr') || ticketNatsAddr.value;
+ticketNatsAddr.addEventListener('change', () => localStorage.setItem('kds-injector-nats-addr', ticketNatsAddr.value));
+ticketNatsMode.checked = localStorage.getItem('kds-injector-nats-mode') === '1';
+ticketNatsFields.style.display = ticketNatsMode.checked ? 'grid' : 'none';
+ticketNatsMode.addEventListener('change', () => {
+  ticketNatsFields.style.display = ticketNatsMode.checked ? 'grid' : 'none';
+  localStorage.setItem('kds-injector-nats-mode', ticketNatsMode.checked ? '1' : '0');
+});
+
+function renderNatsResult(natsAddr, bytes, ok, error) {
+  const empty = logEl.querySelector('.empty');
+  if (empty) empty.remove();
+  const now = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'entry ' + (ok ? 'ok' : 'bad');
+  div.innerHTML =
+    '<div class="top"><span class="id">NATS raw -&gt; ' + escapeHtml(natsAddr) + '</span><span>' + now + '</span></div>' +
+    '<div>' + bytes + ' byte(s) published to subject "incoming" &middot; ' + (ok ? 'OK' : 'FAILED') + '</div>' +
+    (error ? '<div class="err">' + escapeHtml(error) + '</div>' : '');
+  logEl.prepend(div);
+}
+
 const ticketFileInput = document.getElementById('ticketFileInput');
 const ticketDropzone = document.getElementById('ticketDropzone');
 function loadTicketFile(file) {
@@ -332,6 +366,17 @@ document.getElementById('sendTicketBtn').addEventListener('click', async () => {
   const body = ticketBox.value;
   if (!body.trim()) { logError('Nothing to send - paste or load a ticket first.'); return; }
   try {
+    if (ticketNatsMode.checked) {
+      const res = await fetch('/api/send-ticket-nats', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({natsAddr: ticketNatsAddr.value, body})
+      });
+      if (!res.ok) { logError(await res.text()); return; }
+      const r = await res.json();
+      renderNatsResult(ticketNatsAddr.value, r.bytes, r.ok, r.error);
+      return;
+    }
     const res = await fetch('/api/send-ticket', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

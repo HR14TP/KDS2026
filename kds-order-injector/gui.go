@@ -35,6 +35,11 @@ type ticketRequest struct {
 	Screen string `json:"screen"`
 }
 
+type natsTicketRequest struct {
+	NatsAddr string `json:"natsAddr"`
+	Body     string `json:"body"`
+}
+
 type randomRequest struct {
 	Host       string `json:"host"`
 	Count      int    `json:"count"`
@@ -118,6 +123,20 @@ func runGUI(addr string) {
 			ID: order.Id, Table: order.TableName, Waiter: order.WaiterName,
 			Items: len(order.Items), OK: err == nil, Error: errString(err),
 		})
+	})
+
+	mux.HandleFunc("/api/send-ticket-nats", func(w http.ResponseWriter, r *http.Request) {
+		var req natsTicketRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Body == "" {
+			http.Error(w, "body required", http.StatusBadRequest)
+			return
+		}
+		err := publishRawTicket(req.NatsAddr, []byte(req.Body), false)
+		writeJSON(w, map[string]any{"ok": err == nil, "error": errString(err), "bytes": len(req.Body)})
 	})
 
 	mux.HandleFunc("/api/random", func(w http.ResponseWriter, r *http.Request) {

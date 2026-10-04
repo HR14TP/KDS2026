@@ -81,6 +81,14 @@ Send a raw ticket/print-feed text file (see "Raw ticket text format" below):
 ./kds-order-injector-linux -host http://localhost:2020 -ticket-file ticket.txt
 ```
 
+Send that same raw ticket text to the target terminal's local NATS instead,
+so its own `kds-poller` parses it exactly like a real print feed (see "Raw
+text via NATS" below):
+
+```bash
+./kds-order-injector-linux -ticket-file ticket.txt -nats -nats-addr 127.0.0.1:4222
+```
+
 ### Flags
 
 | Flag        | Default                 | Description |
@@ -90,7 +98,9 @@ Send a raw ticket/print-feed text file (see "Raw ticket text format" below):
 | `-interval` | `500ms`                  | Delay between orders when sending more than one |
 | `-file`     | (none)                   | JSON file with one order object or an array of orders, sent verbatim instead of generating random ones |
 | `-ticket-file` | (none)                | Raw ticket/print-feed text file - parsed and sent as one order (takes priority over `-file`/random generation) |
-| `-screen`   | `Kitchen`                | Fallback product center/screen for a `-ticket-file` order when the ticket has no screen marker of its own |
+| `-screen`   | `Kitchen`                | Fallback product center/screen for a `-ticket-file` order when the ticket has no screen marker of its own (ignored when `-nats` is set) |
+| `-nats`     | off                      | With `-ticket-file`, publish the file's raw bytes to NATS subject `incoming` on `-nats-addr` instead of parsing locally and POSTing JSON to `/order` |
+| `-nats-addr`| `127.0.0.1:4222`        | Target terminal's local NATS address (used with `-nats`) |
 | `-table`    | random                   | Table name for generated orders |
 | `-waiter`   | random                   | Waiter name for generated orders |
 | `-items`    | random 1-4               | Number of line items per generated order |
@@ -104,13 +114,38 @@ Each injected order gets a unique `id` (`TESTORDER-<timestamp>` for generated
 orders), since `kdswebserver` matches incoming orders by `id` and treats a
 repeat as an update to the existing ticket rather than a new one.
 
+## Raw text via NATS (`-nats`)
+
+By default, `-ticket-file` parses the ticket text *in this tool* (a ported
+copy of `kds-poller`'s regexes/heuristics - see "Raw ticket text format"
+below) and POSTs the resulting JSON straight to `kdswebserver`'s `/order`.
+That's convenient, but it skips `kds-poller` entirely, so none of its
+existing-order handling runs: merging into an already-open ticket, table
+transfers, or voiding a previously-created item. The ported copy can also
+drift from the original over time.
+
+With `-nats`, the tool instead connects to the target terminal's own local
+NATS (`-nats-addr`, default `127.0.0.1:4222` - matches `kds-poller`'s
+`natsLocalPort`) and publishes the file's raw, unparsed bytes to subject
+`incoming` - the exact subject and payload shape a real print-feed capture
+publishes (`kds-poller-main/pkg/nats_coms.go`'s `NC.Subscribe("incoming",
+...)`). That terminal's actual, unmodified `kds-poller` parses it from
+there via `ProcessMessage` in `engine.go`, so this exercises the real
+parser and its full order-handling logic rather than this tool's copy -
+most useful for testing a ticket that merges into or voids against an
+order already open on that terminal.
+
+In a multi-terminal rig each terminal may run its own local NATS on a
+different port, so always point `-nats-addr` at the specific terminal
+whose `kds-poller` should own the parse.
+
 ## Raw ticket text format
 
 `kds-poller` doesn't take JSON at all - it watches the real POS print feed
 and parses the raw ticket text line by line (regexes and heuristics in
 `kds-poller-main/pkg/process.go` and `engine.go`) directly into the SQLite
 DB. `ticket_text.go` in this tool ports that same set of regexes/heuristics
-so a pasted ticket parses the same way:
+so a pasted ticket parses the same way when `-nats` is *not* used:
 
 - `  * profile *` - order profile (e.g. "dine in"), on its own line
 - `* * screen *  *` - product center/screen for the whole ticket
