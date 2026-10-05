@@ -29,19 +29,19 @@ set -euo pipefail
 #      atomic rename rather than truncating the target in place.
 #   2. If this script is run with sudo (needed here for the .deb install, or
 #      as part of a larger provisioning script), $HOME resolves to /root, so
-#      the binaries would silently land in /root/.config/kds2024/services
+#      the binaries would silently land in /root/.config/kdstabletpos/services
 #      instead of the real user's - KDS keeps using its old binaries and the
 #      script reports success either way. We resolve the invoking user's
 #      real home directory even under sudo.
 #
-# Usage: ./seed-custom-binaries.sh <path-to-kdswebserver-linux> <path-to-kdspoller-linux> [path-to-kds2024.deb]
+# Usage: ./seed-custom-binaries.sh <path-to-kdswebserver-linux> <path-to-kdspoller-linux> [path-to-kdstabletpos.deb]
 #
 # Examples:
 #   # Full update (Electron app + both Go services) - the normal case:
 #   sudo ./seed-custom-binaries.sh \
 #       kds-webserver-main/kds-webserver-main/files/kdswebserver-linux \
 #       kds-poller-main/kds-poller-main/files/kdspoller-linux \
-#       kds-app-main/kds-app-main/out/make/deb/x64/kds2024_1.0.0_amd64.deb
+#       kds-app-main/kds-app-main/out/make/deb/x64/kdstabletpos_1.0.0_amd64.deb
 #
 #   # Go services only, no Electron/UI changes to install:
 #   ./seed-custom-binaries.sh \
@@ -49,7 +49,7 @@ set -euo pipefail
 #       kds-poller-main/kds-poller-main/files/kdspoller-linux
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
-	echo "Usage: $0 <path-to-kdswebserver-linux> <path-to-kdspoller-linux> [path-to-kds2024.deb]"
+	echo "Usage: $0 <path-to-kdswebserver-linux> <path-to-kdspoller-linux> [path-to-kdstabletpos.deb]"
 	exit 1
 fi
 
@@ -80,7 +80,7 @@ if [ -z "$TARGET_HOME" ] || [ ! -d "$TARGET_HOME" ]; then
 	exit 1
 fi
 
-CONFIG_DIR="$TARGET_HOME/.config/kds2024"
+CONFIG_DIR="$TARGET_HOME/.config/kdstabletpos"
 SERVICES_DIR="$CONFIG_DIR/services"
 
 echo "Target user:  $TARGET_USER"
@@ -89,9 +89,9 @@ echo "Services dir: $SERVICES_DIR"
 echo
 echo "== Stopping any running KDS processes =="
 # pgrep -f matches whole command lines. Matching on bare keywords like
-# "kdswebserver"/"kds2024" is a trap: our OWN argv contains those same
+# "kdswebserver"/"kdstabletpos" is a trap: our OWN argv contains those same
 # substrings (the source paths we were given, e.g. ".../kdswebserver-linux"
-# or ".../kds2024_1.0.0_amd64.deb"), and under sudo the separate monitor
+# or ".../kdstabletpos_1.0.0_amd64.deb"), and under sudo the separate monitor
 # process sudo spawns shows that same command line too - excluding just our
 # own $$ doesn't cover it. That self-match silently killed the script before
 # it ever reached the dpkg install step. Matching the actual installed
@@ -99,7 +99,7 @@ echo "== Stopping any running KDS processes =="
 # avoids the ambiguity entirely rather than trying to enumerate every PID to
 # exclude.
 find_kds_pids() {
-	pgrep -f "/usr/lib/kds2024/kds2024|$SERVICES_DIR/kds(webserver|poller|nats|tcpserver)" || true
+	pgrep -f "/usr/lib/kdstabletpos/kdstabletpos|$SERVICES_DIR/kds(webserver|poller|nats|tcpserver)" || true
 }
 
 PIDS="$(find_kds_pids)"
@@ -155,16 +155,16 @@ seed_binary "$POLLER_SRC" "kdspoller"
 echo
 if [ "$TARGET_USER" = "$USER" ]; then
 	echo "== Relaunching KDS =="
-	if command -v kds2024 >/dev/null 2>&1; then
-		nohup kds2024 >/dev/null 2>&1 &
+	if command -v kdstabletpos >/dev/null 2>&1; then
+		nohup kdstabletpos >/dev/null 2>&1 &
 		disown
-		echo "Launched kds2024."
+		echo "Launched kdstabletpos."
 	else
-		echo "Could not find 'kds2024' on PATH - start it manually."
+		echo "Could not find 'kdstabletpos' on PATH - start it manually."
 	fi
 else
 	echo "Updated for $TARGET_USER, but this script is running as $USER (root,"
 	echo "via sudo), so it can't safely relaunch the GUI app for that user's"
 	echo "session (display/auth environment would be missing). Log in as"
-	echo "$TARGET_USER (or from its desktop session) and launch kds2024 manually."
+	echo "$TARGET_USER (or from its desktop session) and launch kdstabletpos manually."
 fi
