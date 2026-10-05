@@ -12,6 +12,12 @@ import (
 //var referenceReg = regexp.MustCompile("[0-9]{1}.[0-9]{1,2}.[0-9]{1,2} [0-9]{1,2}:[0-9]{2} .* ([a-z]{1}[0-9]*.[0-9]*)")
 
 var referenceReg = regexp.MustCompile("[0-9]{1,2}:[0-9]{2} .* ([a-z]{1}[0-9]*.[0-9]*)")
+
+// ticketTimeReg captures the ticket's own printed time (e.g. "10:19 pm"),
+// identical on every physical copy of the same round's ticket regardless of
+// which station's printer/poller reads it - see its use in engine.go for
+// why that cross-terminal identicalness matters.
+var ticketTimeReg = regexp.MustCompile(`([0-9]{1,2}:[0-9]{2}\s[ap]m)`)
 var staffReg = regexp.MustCompile(`(ipad|mini)(.*|\s*)/(.*)`)
 
 var screenReg = regexp.MustCompile(`[*]{1}\s[*]{1}\s(.+)\s[*]{1}\s[*]{1}`)
@@ -351,4 +357,14 @@ func endOfItem(content string, reg *regexp.Regexp, obj *kdsmodels.KDSPollObject)
 		return true
 	}
 	return false
+}
+
+// sanitizeTicketTimeForReference turns a ticket's own printed time (e.g.
+// "10:19 pm") into a short alphanumeric token safe to append to a
+// Reference (e.g. "1019pm") - see its use in engine.go's round-tile
+// splitting.
+var nonAlphanumericReg = regexp.MustCompile(`[^a-z0-9]`)
+
+func sanitizeTicketTimeForReference(ticketTime string) string {
+	return nonAlphanumericReg.ReplaceAllString(strings.ToLower(ticketTime), "")
 }

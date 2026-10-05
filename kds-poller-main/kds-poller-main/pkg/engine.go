@@ -64,6 +64,12 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 	awaitingTransferItemName := false
 	var transferItemName string
 	var sourceTableFromTicket string
+	// ticketTime is this physical ticket's own printed time (e.g. "10:19
+	// pm") - see its use below in the round-tile splitting branch for why
+	// it matters that it's identical across every terminal that receives a
+	// copy of this same round's ticket, unlike a per-terminal counter.
+	foundTicketTime := false
+	var ticketTime string
 	r := bytes.NewReader(content)
 	scanner := bufio.NewScanner(r)
 	extrateller := 8
@@ -213,6 +219,14 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 				ShowDebug("REFERENCE: " + reference)
 				obj.Foundreference = true
 				obj.Neworder.Reference = reference
+			}
+		}
+
+		if !foundTicketTime {
+			tickettimematch := GetMatchAndReturn(text, ticketTimeReg)
+			if tickettimematch != "" {
+				foundTicketTime = true
+				ticketTime = tickettimematch
 			}
 		}
 
@@ -543,15 +557,26 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 			// still fall through to the plain-merge branch below so its
 			// void can find the existing item on the existing tile.
 			//
-			// The new tile's reference is derived from existing.SubOrders
-			// (incremented on the ORIGINAL order, not a fresh local
-			// counter) rather than e.g. NewOrderForToday - every terminal
-			// runs its own poller independently against the same ticket
-			// feed with no cross-machine coordination, so the suffix must
-			// come only from data every terminal computes identically from
-			// this same ticket: the prior round count already stored on
-			// the (by now already-synced, see D06) original order. Same
-			// reasoning as the "-XFER" suffix above.
+			// The new tile's reference is derived from this ticket's OWN
+			// printed time (ticketTime, e.g. "10:19 pm" -> "-R1019pm"),
+			// not from existing.SubOrders - every terminal runs its own
+			// poller independently against its own per-screen slice of the
+			// same ticket feed with no cross-machine coordination, and a
+			// round that has nothing for a given screen never reaches this
+			// branch on that screen's own poller at all (see
+			// round_reference_drift_test.go). Deriving the suffix from a
+			// per-terminal incrementing counter let two terminals land on
+			// DIFFERENT suffixes for the exact same round the moment a
+			// prior round had skipped one of them - breaking the
+			// by-Reference match a remote close/recall relies on to find
+			// the same round-tile on every terminal. The ticket's own
+			// printed time is identical on every physical copy of this
+			// same round's ticket regardless of which screen reads it, so
+			// every terminal that DOES see this round computes the exact
+			// same suffix. Falls back to the old SubOrders-counter suffix
+			// only if this ticket's time couldn't be parsed at all (should
+			// not happen on a real ticket, but must still produce some
+			// valid, non-empty Reference rather than none).
 			existing.SubOrders++
 			db.Save(&existing)
 			roundOrder := kdsmodels.KDSOrders{}
@@ -564,7 +589,11 @@ func ProcessMessage(obj kdsmodels.KDSPollObject, content []byte, root string, db
 			ordercounter := NewOrderForToday(db)
 			ordercounter++
 			roundOrder.OrderFortoday = ordercounter
-			roundOrder.Reference = fmt.Sprintf("%s-R%d", existing.Reference, existing.SubOrders)
+			roundSuffix := sanitizeTicketTimeForReference(ticketTime)
+			if roundSuffix == "" {
+				roundSuffix = fmt.Sprintf("%d", existing.SubOrders)
+			}
+			roundOrder.Reference = fmt.Sprintf("%s-R%s", existing.Reference, roundSuffix)
 			db.Create(&roundOrder)
 			obj.Neworder = roundOrder
 			wasNewOrder = true

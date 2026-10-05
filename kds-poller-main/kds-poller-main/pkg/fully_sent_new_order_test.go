@@ -145,7 +145,10 @@ func TestProcessMessage_StillOpenOrderGetsItsOwnNewTileForNextRound(t *testing.T
 	if roundOrder.ID == 0 {
 		t.Fatal("expected a second order for round 2")
 	}
-	if roundOrder.Reference != "a1.1-R1" {
+	// Suffix is the ticket's own printed time ("10:25 pm" -> "1025pm"), not
+	// a per-terminal round counter - see the comment on this derivation in
+	// engine.go (round_reference_drift_test.go proves why).
+	if roundOrder.Reference != "a1.1-R1025pm" {
 		t.Fatalf("expected the new tile's reference derived from the original with a round suffix, got %q", roundOrder.Reference)
 	}
 	if roundOrder.Table != firstOrder.Table || roundOrder.Status != "OPEN" {
