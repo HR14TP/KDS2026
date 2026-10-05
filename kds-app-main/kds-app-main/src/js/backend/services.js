@@ -350,7 +350,22 @@ const services = {
     setConfig: (config , hwid = null , serverpointer = null) => {
         let conf = JSON.parse(config);
         try{
-            fs.writeFileSync(services.kdsconfig.file, JSON.stringify(conf, null, 4));
+            // Write to a temp file in the same directory, then rename over
+            // the real path - a plain writeFileSync on the live path left a
+            // truncated/corrupt kdsconfig.json behind when this machine lost
+            // power mid-write, and kds-webserver-main's own LoadConfiguration
+            // silently swallows that JSON decode error and boots with a
+            // blank config instead of erroring - wiping out real settings
+            // (e.g. duplicate.peers) with no indication anything went wrong.
+            // A rename() is atomic at the filesystem level even across a
+            // crash: any reader (or a future boot) only ever sees the old
+            // complete file or the new complete file, never a partial one.
+            // Same reasoning as seed_binary's atomic swap in
+            // seed-custom-binaries.sh.
+            const dir = path.dirname(services.kdsconfig.file);
+            const tmp = path.join(dir, '.' + path.basename(services.kdsconfig.file) + '.' + process.pid + '.tmp');
+            fs.writeFileSync(tmp, JSON.stringify(conf, null, 4));
+            fs.renameSync(tmp, services.kdsconfig.file);
             if (hwid !== null && serverpointer !== null){
                 let msg = {
                     terminal_id: 0,

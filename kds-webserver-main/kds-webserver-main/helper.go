@@ -47,7 +47,18 @@ func LoadConfiguration(file string) kdsmodels.KDSConfig {
 	}
 	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
-	jsonParser.Decode(&config)
+	// A truncated/corrupt kdsconfig.json (e.g. power lost mid-write on the
+	// Electron side) used to fail completely silently here - Decode's error
+	// was never even checked - leaving `config` as a blank zero-value struct
+	// (Passmode=false, Duplicate.Peers=nil, every setting gone) with nothing
+	// in any log to say why. Still proceeds with whatever `config` ends up
+	// holding either way (same as before - there's no last-known-good backup
+	// to fall back to here), but now at least makes the failure observable
+	// instead of indistinguishable from a deliberately blank config.
+	if err := jsonParser.Decode(&config); err != nil {
+		sentry.CaptureException(err)
+		fmt.Println("LoadConfiguration: failed to parse " + file + ": " + err.Error())
+	}
 	normalizeStandaloneMode(&config)
 	return config
 }
