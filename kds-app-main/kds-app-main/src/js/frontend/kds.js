@@ -116,6 +116,12 @@ KDS.init = function(config) {
 		root.style.setProperty('--subitemcolor', KDS.kdsconfig.colors.subitem);
 		root.style.setProperty('--late1color', KDS.kdsconfig.colors.late1);
 		root.style.setProperty('--late2color', KDS.kdsconfig.colors.late2);
+		// Configs saved before these two fields existed won't have them -
+		// fall back to the same orange/green wimpy.css hard-coded before
+		// this became configurable, so an old config looks identical to
+		// before rather than losing its border/badge colors.
+		root.style.setProperty('--inproductioncolor', KDS.kdsconfig.colors.inproduction || '#ef6c00');
+		root.style.setProperty('--completedcolor', KDS.kdsconfig.colors.completed || '#4caf50');
 		// How many tiles tall a column is when Fixed Tile Size (KDS Config)
 		// is on - see wimpy.css's own --tile-fixed-rows fallback for why
 		// this is only set here rather than also hardcoded there. Defaults

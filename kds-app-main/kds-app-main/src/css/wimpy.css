@@ -340,7 +340,7 @@ body.touchui .tile-collapse-toggle {
 	width: 30px;
 	height: 30px;
 	cursor: pointer;
-	accent-color: #4caf50;
+	accent-color: var(--completedcolor, #4caf50);
 }
 
 /* Order detail dialog rows only: this column is always comfortably wide
@@ -553,7 +553,7 @@ body.touchui .tile-collapse-toggle {
 
 /* "In production" feature */
 .iteminproduction {
-	border-top: 7px solid #ef6c00 !important;
+	border-top: 7px solid var(--inproductioncolor, #ef6c00) !important;
 }
 
 .production-tag {
@@ -561,7 +561,7 @@ body.touchui .tile-collapse-toggle {
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	background-color: #ef6c00;
+	background-color: var(--inproductioncolor, #ef6c00);
 	color: white;
 	font-size: 70%;
 	font-weight: bold;
@@ -580,7 +580,7 @@ body.touchui .tile-collapse-toggle {
 }
 
 .production-tag-complete {
-	background-color: #4caf50;
+	background-color: var(--completedcolor, #4caf50);
 	color: white;
 }
 
@@ -644,11 +644,11 @@ body.touchui .production-timer {
 }
 
 .order-inproduction {
-	border: 4px solid #ef6c00 !important;
+	border: 4px solid var(--inproductioncolor, #ef6c00) !important;
 }
 
 .order-complete {
-	border: 4px solid #4caf50 !important;
+	border: 4px solid var(--completedcolor, #4caf50) !important;
 }
 
 /* Section headings that group main-tile items by production state - same
@@ -679,11 +679,11 @@ body.touchui .production-timer {
 }
 
 .sectionheading-inprod {
-	background-color: #ef6c00;
+	background-color: var(--inproductioncolor, #ef6c00);
 }
 
 .sectionheading-complete {
-	background-color: #4caf50;
+	background-color: var(--completedcolor, #4caf50);
 }
 
 .sectionheading-senttotable {
@@ -721,11 +721,11 @@ body.touchui .production-timer {
 }
 
 .tile-status-pill-inprod {
-	background-color: #ef6c00;
+	background-color: var(--inproductioncolor, #ef6c00);
 }
 
 .tile-status-pill-complete {
-	background-color: #4caf50;
+	background-color: var(--completedcolor, #4caf50);
 }
 
 /* Wraps the heading + its items so the whole IN PRODUCTION / COMPLETED
@@ -739,11 +739,11 @@ body.touchui .production-timer {
 }
 
 .sectiongroup-inprod {
-	border: 5px solid #ef6c00;
+	border: 5px solid var(--inproductioncolor, #ef6c00);
 }
 
 .sectiongroup-complete {
-	border: 5px solid #4caf50;
+	border: 5px solid var(--completedcolor, #4caf50);
 }
 
 .sectiongroup-senttotable {

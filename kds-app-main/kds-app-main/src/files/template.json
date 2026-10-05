@@ -78,7 +78,9 @@
         "mainitem": "#ffff00",
         "subitem": "#ffffff",
         "late1": "yellow",
-        "late2": "#ff0000"
+        "late2": "#ff0000",
+        "inproduction": "#ef6c00",
+        "completed": "#4caf50"
     },
     "sound": {
         "updateOrder" : {

@@ -436,6 +436,18 @@ frontend._config.loadconfigHTML = () => {
         } else {
             document.getElementById("late2time").value = 10;
         }
+        // config.html predates these two fields, so guard their absence
+        // there the same way standalonemode is guarded above. Older saved
+        // configs predate the fields too - fall back to the same
+        // orange/green this terminal would otherwise be hard-coded to, so
+        // loading an old config here doesn't blank out to the color
+        // picker's own black default.
+        if (document.getElementById("inproductioncolor")) {
+            document.getElementById("inproductioncolor").value = conf.colors.hasOwnProperty('inproduction') && conf.colors.inproduction ? conf.colors.inproduction : '#ef6c00';
+        }
+        if (document.getElementById("completedcolor")) {
+            document.getElementById("completedcolor").value = conf.colors.hasOwnProperty('completed') && conf.colors.completed ? conf.colors.completed : '#4caf50';
+        }
 
         if (conf.flags.hasOwnProperty('enablemulticolumn')) {
             document.getElementById("enablemulticolumn").checked = conf.flags.enablemulticolumn;
@@ -670,6 +682,15 @@ frontend._config.saveConfig = () => {
         conf.colors.late2 = document.getElementById("late2color").value;
         conf.colors.late1time = document.getElementById("late1time").value;
         conf.colors.late2time = document.getElementById("late2time").value;
+        // config.html predates these two fields - guard their absence the
+        // same way standalonemode is guarded above, keeping whatever was
+        // already saved rather than overwriting it with nothing.
+        if (document.getElementById("inproductioncolor")) {
+            conf.colors.inproduction = document.getElementById("inproductioncolor").value;
+        }
+        if (document.getElementById("completedcolor")) {
+            conf.colors.completed = document.getElementById("completedcolor").value;
+        }
 
         //NEW
         try{

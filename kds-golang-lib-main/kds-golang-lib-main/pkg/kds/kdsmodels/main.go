@@ -228,6 +228,8 @@ type KDSConfig struct {
 		Late2time        string `json:"late2time"`
 		Reversecount     bool   `json:"reversecount"`
 		Reversecounttime int    `json:"reversecounttime"`
+		Inproduction     string `json:"inproduction"`
+		Completed        string `json:"completed"`
 	} `json:"colors"`
 	Text struct {
 		Consumer string `json:"consumer"`

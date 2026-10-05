@@ -320,6 +320,32 @@
         </div>
       </div>
 
+      <div class="settings-group">
+        <div class="settings-group-header is-collapsible">
+          <h2>Production Status Colors</h2>
+          <p>Colors every tile border, badge, and section heading tied to an item/order's production state</p>
+          <span class="settings-group-chevron">&#9662;</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="inproductioncolor">In Production Color</label>
+            <div class="setting-row-desc">Tile border, badges, and headings shown while an item/order is being produced</div>
+          </div>
+          <div class="setting-row-control">
+            <input type="color" id="inproductioncolor" value="#ef6c00">
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-text">
+            <label class="setting-row-title" for="completedcolor">Completed Color</label>
+            <div class="setting-row-desc">Tile border, badges, and headings shown once an item/order is complete</div>
+          </div>
+          <div class="setting-row-control">
+            <input type="color" id="completedcolor" value="#4caf50">
+          </div>
+        </div>
+      </div>
+
       <div class="settings-actions">
         <input class="btn btn-danger" onclick="frontend.exitApp()" type="button" value="Close The App">
         <input class="btn btn-primary" onclick="frontend._config.saveConfig()" type="button" value="Save Settings">
