@@ -428,6 +428,12 @@
             <input type="text" placeholder="10.0.0.3, 10.0.0.4" id="peers">
             <small>Use this for sites with more than two other KDS terminals - every IP listed here also receives every update, the same as the two above</small>
           </div>
+          <div class="field-group">
+            <label>Known Terminals On Network</label>
+            <div id="knownTerminalsChecklist"><small>No terminals discovered yet</small></div>
+            <button type="button" id="rediscoverKnownTerminalsBtn" onclick="frontend._config.rediscoverKnownTerminals()">Rediscover Terminals</button>
+            <small>Terminals this one has seen announce themselves on the network - tick any to add their IP to the list above, so you never have to type an IP by hand</small>
+          </div>
         </div>
       </div>
 

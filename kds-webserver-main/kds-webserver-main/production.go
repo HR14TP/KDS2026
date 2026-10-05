@@ -24,6 +24,7 @@ func migrateProductionColumns() {
 	ENV.DB.Exec("ALTER TABLE kds_items ADD sent_to_table_at DATETIME;")
 	ENV.DB.Exec("ALTER TABLE kds_screens ADD assigned_pass_terminal TEXT;")
 	ENV.DB.Exec("CREATE TABLE IF NOT EXISTS kds_pass_terminals (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, last_seen DATETIME);")
+	ENV.DB.Exec("CREATE TABLE IF NOT EXISTS kds_known_terminals (id INTEGER PRIMARY KEY AUTOINCREMENT, screen TEXT, ip TEXT, last_seen DATETIME);")
 }
 
 // migrateOrphanedBlankScreenItems runs once at boot (see main.go) as a

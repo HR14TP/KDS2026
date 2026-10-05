@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
 	"time"
 
@@ -391,6 +392,9 @@ func screenPassAssignmentRemoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	upsertScreenPassAssignment(assignment.Screen, assignment.Passterminal)
+	if host, _, splitErr := net.SplitHostPort(r.RemoteAddr); splitErr == nil {
+		upsertKnownTerminal(assignment.Screen, host)
+	}
 }
 
 // passTerminalAnnounceRemoteHandler receives another pass-mode terminal's
@@ -455,6 +459,23 @@ func rediscoverPassTerminalsHandler(w http.ResponseWriter, r *http.Request) {
 	requestPassTerminalRediscovery()
 	time.Sleep(1500 * time.Millisecond)
 	terminals := listAvailablePassTerminals()
+	js, _ := json.Marshal(&terminals)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+// getKnownTerminalsHandler lists every terminal this one has heard announce
+// its own screen name, with the IP it was heard from (GET
+// http://127.0.0.1:2020/getknownterminals) - backs the auto-populated
+// "Additional KDS Terminal IPs" list on the Client Config screen, so a site
+// on static IPs never has to hand-type/maintain that comma-separated list.
+// Reuses the exact same "Rediscover Pass Terminals" button/endpoint to
+// refresh - requestPassTerminalRediscovery already re-triggers
+// announceOwnScreenPassAssignment on every terminal on-site (not just
+// pass-mode ones), which is the same broadcast upsertKnownTerminal hooks
+// into, so no separate rediscovery trigger is needed here.
+func getKnownTerminalsHandler(w http.ResponseWriter, r *http.Request) {
+	terminals := listKnownTerminals()
 	js, _ := json.Marshal(&terminals)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)

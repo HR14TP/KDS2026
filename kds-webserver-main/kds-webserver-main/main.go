@@ -151,6 +151,7 @@ func main() {
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/screenpassassignmentremote/", screenPassAssignmentRemoteHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/passterminalannounceremote/", passTerminalAnnounceRemoteHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/getpassterminals", getPassTerminalsHandler))
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/getknownterminals", getKnownTerminalsHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/rediscoverpassterminals", rediscoverPassTerminalsHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/repairbrokenorders", repairBrokenOrdersHandler))
 	r.HandleFunc(newrelic.WrapHandleFunc(app, "/discoverpingremote/", discoverPingRemoteHandler))

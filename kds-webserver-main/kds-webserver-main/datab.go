@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/reverent911/kds-golang-lib/pkg/kds/kdsmodels"
@@ -841,6 +842,54 @@ func upsertPassTerminalAnnounce(name string) {
 	terminal.LastSeen = getTimeSQL()
 	ENV.DB.Save(&terminal)
 }
+
+// knownTerminalUpsertMu is passTerminalUpsertMu's counterpart for
+// kds_known_terminals.
+var knownTerminalUpsertMu sync.Mutex
+
+// upsertKnownTerminal records that a terminal named `screen` is present
+// on-site at `ip`, for the Client Config screen's auto-populated "Additional
+// KDS Terminal IPs" list - see handleUDPEnvelope's "screenpassassignmentremote"
+// case and screenPassAssignmentRemoteHandler, both of which already receive
+// this same periodic broadcast (announceOwnScreenPassAssignment) for an
+// unrelated reason and now also record where it came from. Unlike
+// upsertPassTerminalAnnounce this isn't gated on pass-mode at all - every
+// terminal sends this broadcast, so every terminal becomes a selectable
+// peer, not just pass-capable ones.
+func upsertKnownTerminal(screen string, ip string) {
+	if screen == "" || ip == "" {
+		return
+	}
+	knownTerminalUpsertMu.Lock()
+	defer knownTerminalUpsertMu.Unlock()
+	terminal := kdsmodels.KDSKnownTerminals{}
+	ENV.DB.Where("LOWER(screen) = LOWER(?)", screen).First(&terminal)
+	if terminal.ID == 0 {
+		terminal.Screen = screen
+	}
+	terminal.IP = ip
+	terminal.LastSeen = getTimeSQL()
+	ENV.DB.Save(&terminal)
+}
+
+// listKnownTerminals returns every terminal this terminal has heard
+// announce itself recently enough to still trust - same staleness window
+// and "keep an unparseable LastSeen rather than hide it" reasoning as
+// listAvailablePassTerminals.
+func listKnownTerminals() []kdsmodels.KDSKnownTerminals {
+	all := []kdsmodels.KDSKnownTerminals{}
+	ENV.DB.Find(&all)
+	cutoff := time.Now().Add(-passTerminalStaleAfter)
+	fresh := []kdsmodels.KDSKnownTerminals{}
+	for _, t := range all {
+		seen, err := time.ParseInLocation("2006-01-02 15:04:05", t.LastSeen, time.Local)
+		if err != nil || seen.After(cutoff) {
+			fresh = append(fresh, t)
+		}
+	}
+	return fresh
+}
+
 func recallOrderDatabase(orderid int) kdsmodels.KDSOrders {
 	order := kdsmodels.KDSOrders{}
 	ENV.DB.Where("id = ?", orderid).Where("DATE(created) = DATE(CURRENT_TIMESTAMP, 'localtime')"+todayOrDateUnparseableDATE).First(&order)

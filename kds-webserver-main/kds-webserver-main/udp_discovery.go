@@ -76,17 +76,17 @@ func startUDPDiscovery() {
 	go func() {
 		buf := make([]byte, 65535)
 		for {
-			n, _, err := conn.ReadFromUDP(buf)
+			n, addr, err := conn.ReadFromUDP(buf)
 			if err != nil {
 				fmt.Println("udp discovery: read error: ", err)
 				continue
 			}
-			handleUDPEnvelope(buf[:n])
+			handleUDPEnvelope(buf[:n], addr.IP.String())
 		}
 	}()
 }
 
-func handleUDPEnvelope(raw []byte) {
+func handleUDPEnvelope(raw []byte, senderIP string) {
 	var envelope udpEnvelope
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return
@@ -158,6 +158,7 @@ func handleUDPEnvelope(raw []byte) {
 		var assignment kdsmodels.KDSScreenPassAssignment
 		if err := json.Unmarshal(envelope.Data, &assignment); err == nil {
 			upsertScreenPassAssignment(assignment.Screen, assignment.Passterminal)
+			upsertKnownTerminal(assignment.Screen, senderIP)
 		}
 	case "passterminalannounceremote":
 		var announce kdsmodels.KDSPassTerminalAnnounce

@@ -170,6 +170,120 @@ frontend._config.rediscoverPassTerminals = () => {
     xmlHttp.open("GET", "http://127.0.0.1:2020/rediscoverpassterminals", true);
     xmlHttp.send(null);
 };
+// Fills the "Additional KDS Terminal IPs" checklist from a
+// /getknownterminals-shaped terminal list, checking any whose IP is already
+// in the saved peers textbox (currentPeersCSV) so a terminal that's
+// temporarily offline (or just hasn't re-announced since this list was last
+// fetched) stays checked instead of silently dropping out of the peers list
+// on next save - same "don't silently lose what's already configured"
+// reasoning as _populatePassTerminalSelect's selectedValue handling. Every
+// checkbox's own change handler keeps the underlying #peers textarea (the
+// actual field saveConfig reads) in sync, so no save-path change was needed
+// elsewhere - this is purely a friendlier way to populate the same field.
+frontend._config._populateKnownTerminalsChecklist = (container, terminals, currentPeersCSV) => {
+    let currentIPs = (currentPeersCSV || '').split(',').map((s) => s.trim()).filter((s) => !!s);
+    let ownScreen = (document.getElementById('kdsField') && document.getElementById('kdsField').value || '').toLowerCase();
+    let seenIPs = {};
+    container.innerHTML = '';
+    (terminals || []).forEach((t) => {
+        if (!t.ip || seenIPs[t.ip]) {
+            return;
+        }
+        seenIPs[t.ip] = true;
+        if (t.screen && t.screen.toLowerCase() === ownScreen) {
+            // A terminal never needs to peer-notify itself.
+            return;
+        }
+        let row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;margin:2px 0;';
+        let box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = t.ip;
+        box.checked = currentIPs.indexOf(t.ip) !== -1;
+        box.addEventListener('change', () => {
+            let peersField = document.getElementById('peers');
+            if (!peersField) {
+                return;
+            }
+            let ips = peersField.value.split(',').map((s) => s.trim()).filter((s) => !!s);
+            if (box.checked) {
+                if (ips.indexOf(t.ip) === -1) {
+                    ips.push(t.ip);
+                }
+            } else {
+                ips = ips.filter((ip) => ip !== t.ip);
+            }
+            peersField.value = ips.join(', ');
+        });
+        let text = document.createElement('span');
+        text.textContent = t.screen + ' (' + t.ip + ')';
+        row.appendChild(box);
+        row.appendChild(text);
+        container.appendChild(row);
+    });
+    if (container.innerHTML === '') {
+        container.innerHTML = '<span style="font-size:12px;color:#888;">No other terminals heard from yet - click Rediscover, or check they\'re powered on and on the same network.</span>';
+    }
+};
+// Populates the known-terminals checklist from this terminal's own local
+// backend (passive read of whatever's already been heard - see
+// upsertKnownTerminal in kds-webserver-main, fed by the same periodic
+// screen/pass-terminal-assignment broadcast every terminal already sends).
+frontend._config.loadKnownTerminals = (currentPeersCSV) => {
+    let container = document.getElementById('knownTerminalsChecklist');
+    if (!container) {
+        return;
+    }
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = () => {
+        if (xmlHttp.readyState === 4) {
+            let terminals = [];
+            if (xmlHttp.status === 200) {
+                try {
+                    terminals = JSON.parse(xmlHttp.responseText) || [];
+                } catch (err) {
+                    console.log(err);
+                }
+            }
+            frontend._config._populateKnownTerminalsChecklist(container, terminals, currentPeersCSV);
+        }
+    };
+    xmlHttp.open("GET", "http://127.0.0.1:2020/getknownterminals", true);
+    xmlHttp.send(null);
+};
+// Backs the "Rediscover" button next to the known-terminals checklist -
+// reuses the exact same /rediscoverpassterminals trigger the Pass Terminal
+// dropdown's own button calls (it already re-announces every terminal
+// on-site's screen name right now rather than waiting up to 2 minutes - see
+// requestPassTerminalRediscovery in kds-webserver-main - which is the same
+// broadcast upsertKnownTerminal hooks into), then repopulates this
+// checklist from this terminal's own accumulated list once that round has
+// had a moment to complete.
+frontend._config.rediscoverKnownTerminals = () => {
+    let container = document.getElementById('knownTerminalsChecklist');
+    let btn = document.getElementById('rediscoverKnownTerminalsBtn');
+    let peersField = document.getElementById('peers');
+    if (!container) {
+        return;
+    }
+    let currentPeersCSV = peersField ? peersField.value : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Rediscovering...';
+    }
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = () => {
+        if (xmlHttp.readyState === 4) {
+            frontend._config.loadKnownTerminals(currentPeersCSV);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Rediscover';
+            }
+        }
+    };
+    xmlHttp.open("GET", "http://127.0.0.1:2020/rediscoverpassterminals", true);
+    xmlHttp.send(null);
+};
 // Backs the "Repair Broken Orders" button (Client Config -> Other) - an
 // on-demand trigger for migrateOrphanedBlankScreenItems/
 // repairBrokenOrdersHandler in kds-webserver-main, for anyone who doesn't
@@ -362,6 +476,9 @@ frontend._config.loadconfigHTML = () => {
             // (e.g. in-production status) no matter which one they're made on.
             document.getElementById("screen2").value = conf.duplicate.hasOwnProperty('screen2') ? conf.duplicate.screen2 : '';
             document.getElementById("peers").value = conf.duplicate.hasOwnProperty('peers') ? conf.duplicate.peers.join(', ') : '';
+            if (document.getElementById("knownTerminalsChecklist")) {
+                frontend._config.loadKnownTerminals(document.getElementById("peers").value);
+            }
             if (conf.duplicate.enableduplication === true){
                 document.getElementById("duplicationcontainer").classList.remove("dis");
             }
