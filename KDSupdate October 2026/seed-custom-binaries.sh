@@ -82,6 +82,7 @@ fi
 
 CONFIG_DIR="$TARGET_HOME/.config/kdstabletpos"
 SERVICES_DIR="$CONFIG_DIR/services"
+OLD_CONFIG_DIR="$TARGET_HOME/.config/kds2024"
 
 echo "Target user:  $TARGET_USER"
 echo "Services dir: $SERVICES_DIR"
@@ -97,9 +98,10 @@ echo "== Stopping any running KDS processes =="
 # it ever reached the dpkg install step. Matching the actual installed
 # runtime paths instead - which our build-source arguments never resemble -
 # avoids the ambiguity entirely rather than trying to enumerate every PID to
-# exclude.
+# exclude. The old kds2024 binary path is matched too, purely for this one
+# rename transition - a machine mid-upgrade could still have it running.
 find_kds_pids() {
-	pgrep -f "/usr/lib/kdstabletpos/kdstabletpos|$SERVICES_DIR/kds(webserver|poller|nats|tcpserver)" || true
+	pgrep -f "/usr/lib/kdstabletpos/kdstabletpos|/usr/lib/kds2024/kds2024|$SERVICES_DIR/kds(webserver|poller|nats|tcpserver)" || true
 }
 
 PIDS="$(find_kds_pids)"
@@ -127,6 +129,27 @@ if [ -n "$DEB_SRC" ]; then
 	echo
 	echo "== Installing $DEB_SRC =="
 	dpkg -i "$DEB_SRC" || apt-get install -f -y
+
+	# The app was renamed kds2024 -> kdstabletpos - dpkg sees these as two
+	# unrelated packages (different name = no automatic replace/upgrade), so
+	# without this the old one just sits there taking up space and leaving
+	# its stale kds2024.desktop/launcher around.
+	if dpkg -l kds2024 >/dev/null 2>&1; then
+		echo "Removing old 'kds2024' package (renamed to kdstabletpos) ..."
+		dpkg -r kds2024 || true
+	fi
+fi
+
+# Same rename: carry over the existing ~/.config/kds2024 (HWID registration,
+# client config, order history) so this isn't a blank slate on a machine
+# that already had kds2024 configured. Must happen before mkdir below,
+# which would otherwise create an empty kdstabletpos dir first and make
+# this look like a fresh install with nothing to migrate.
+if [ -d "$OLD_CONFIG_DIR" ] && [ ! -d "$CONFIG_DIR" ]; then
+	echo
+	echo "== Migrating $OLD_CONFIG_DIR -> $CONFIG_DIR =="
+	cp -a "$OLD_CONFIG_DIR" "$CONFIG_DIR"
+	chown -R "$TARGET_USER" "$CONFIG_DIR" 2>/dev/null || true
 fi
 
 mkdir -p "$SERVICES_DIR"
