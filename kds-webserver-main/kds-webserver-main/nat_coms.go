@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/nats-io/nats.go"
@@ -85,22 +86,50 @@ func sendToPeers(subject string, data []byte) {
 	}
 }
 
+// postToHostMaxAttempts/postToHostBaseBackoff: this is the one push leg
+// that's genuinely capable of being reliable (unlike UDP broadcast, which
+// is inherently best-effort at the protocol level) - it was previously a
+// single, un-retried attempt with no client timeout at all, so one transient
+// failure (the peer momentarily busy, a brief network blip, a half-open
+// connection that never errors or completes) permanently dropped that
+// close for that one peer, with nothing else re-attempting delivery until
+// the next periodic reconciliation tick. Confirmed live: an order closed
+// on its pass terminal intermittently never reached a linked sub-screen.
+// Retrying a handful of times with a short backoff turns a one-off blip
+// into a non-event; reconcileWithPeers (see reconcile.go) remains the
+// durable backstop for a peer that's down for longer than these retries
+// can bridge.
+const postToHostMaxAttempts = 3
+const postToHostBaseBackoff = 300 * time.Millisecond
+
 func postToHost(host string, subject string, data []byte) {
 	url := "http://" + peerHostPort(host) + "/" + subject + "/"
-	request, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
-	if err != nil {
-		fmt.Println(err)
-		return
+	client := &http.Client{Timeout: 3 * time.Second}
+	backoff := postToHostBaseBackoff
+	var lastErr error
+	for attempt := 1; attempt <= postToHostMaxAttempts; attempt++ {
+		// A fresh request each attempt: the previous attempt's
+		// bytes.Buffer is already fully read (consumed) by the time
+		// client.Do returns, successfully or not.
+		request, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+		response, err := client.Do(request)
+		if err == nil {
+			response.Body.Close()
+			return
+		}
+		lastErr = err
+		if attempt < postToHostMaxAttempts {
+			time.Sleep(backoff)
+			backoff *= 2
+		}
 	}
-	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println("peer notify failed: " + url)
-		fmt.Println(err)
-		return
-	}
-	defer response.Body.Close()
+	fmt.Println("peer notify failed after retries: " + url)
+	fmt.Println(lastErr)
 }
 
 func sendIfCallBackPOST(subject string, data []byte) {
@@ -637,6 +666,18 @@ func natsCloseOrder(m *nats.Msg) {
 	sendIfNeeded("DUPCLOSEORDERSCREEN", json1)
 	sendToPeers("closeorderscreenremote", json1)
 	broadcastUDP("closeorderscreenremote", json1)
+	// Fast-follow safety net: postToHost's own retries (see nat_coms.go)
+	// now bridge a one-off transient failure, and UDP is inherently
+	// best-effort at the protocol level regardless - but if every leg
+	// still misses a peer (e.g. that peer was rebooting at this exact
+	// moment), nothing before this would re-examine this close again until
+	// asyncReconcileWithPeers' own periodic tick, up to 2 minutes later.
+	// Scheduling one extra reconcile pass shortly after every local close -
+	// not just waiting on the periodic timer - catches that gap in
+	// seconds instead of minutes, same safety gating as the periodic one
+	// (reconcileWithPeer only ever finalizes a peer's order when that peer
+	// is genuinely deferred to this screen as its pass terminal).
+	time.AfterFunc(10*time.Second, reconcileWithPeers)
 	notifyPrepTimeWithoutScreen()
 	m.Respond(js)
 

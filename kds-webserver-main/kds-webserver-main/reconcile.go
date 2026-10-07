@@ -9,6 +9,22 @@ import (
 	"github.com/reverent911/kds-golang-lib/pkg/kds/kdsmodels"
 )
 
+// KDSReconcileSnapshot is the wire shape served by reconcileSnapshotHandler -
+// wraps the orders list with the responding terminal's own screen name, so
+// a puller can run the exact same assigned_pass_terminal safety check a
+// real-time close already does (isDeferredToPassTerminal) before trusting
+// this peer's "already closed" state. Without the screen name, reconcile
+// couldn't tell "my own configured pass terminal already closed this" apart
+// from "some unrelated terminal that happens to share this Reference closed
+// its own, unrelated section" - exactly the standalone-terminal bug
+// closeOrderForPassScreen's own doc comment describes for the real-time
+// path (a Kitchen pass screen's bump must never touch a Standalone Mode
+// Bar's row on the same shared reference).
+type KDSReconcileSnapshot struct {
+	Screen string                `json:"screen"`
+	Orders []kdsmodels.KDSOrders `json:"orders"`
+}
+
 // D02: every cross-terminal status change in this codebase (DUPCLOSEITEM,
 // DUPOPENITEM, DUPSTARTPRODUCTION, DUPSENDTOTABLE, closeorderscreenremote,
 // neworderremote, neworderitemsremote, ...) travels one-way and
@@ -38,22 +54,37 @@ import (
 // already use, so a caught-up item ends up in exactly the state a timely
 // delivery would have left it in - no new code path, no new side effects.
 
-// reconcileSnapshotHandler serves this terminal's own current open-order
-// list to a peer's reconcileWithPeer pull, in the same shape
-// getAllDatabaseOrdersKDS already produces for the local frontend's own
-// initial board load - Occurrence is computed fresh per item before
+// getTodaysOrdersForReconcile returns every one of today's orders
+// regardless of Status - unlike getAllDatabaseOrdersKDS (OPEN only, what
+// the live board itself renders), a peer pulling this snapshot needs to
+// see an order THIS terminal already closed too, so it can recognize
+// "already closed here" and catch its own stuck-open copy up (see
+// reconcileWithPeer's order-close catch-up below).
+func getTodaysOrdersForReconcile() []kdsmodels.KDSOrders {
+	orders := []kdsmodels.KDSOrders{}
+	ENV.DB.Where("strftime('%d-%m-%Y',created) = strftime('%d-%m-%Y', 'now', 'localtime')" + todayOrDateUnparseable).Find(&orders)
+	for i := range orders {
+		ENV.DB.Where("kds_order_id = ?", orders[i].ID).Find(&orders[i].Items)
+	}
+	return orders
+}
+
+// reconcileSnapshotHandler serves this terminal's own current snapshot -
+// every one of today's orders, open or already closed - to a peer's
+// reconcileWithPeer pull. Occurrence is computed fresh per item before
 // marshaling (gorm:"-", never persisted) the same way every single-item
 // remote-sync path already does before broadcasting, since it's how a
 // peer can address "this specific item" without shared auto-increment ids
 // (see itemOccurrenceInOrder's own doc comment).
 func reconcileSnapshotHandler(w http.ResponseWriter, r *http.Request) {
-	orders := getAllDatabaseOrdersKDS()
+	orders := getTodaysOrdersForReconcile()
 	for i := range orders {
 		for j := range orders[i].Items {
 			orders[i].Items[j].Occurrence = itemOccurrenceInOrder(orders[i].Items[j])
 		}
 	}
-	js, err := json.Marshal(orders)
+	snapshot := KDSReconcileSnapshot{Screen: ENV.Config.Client.Screen, Orders: orders}
+	js, err := json.Marshal(snapshot)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,14 +133,14 @@ func reconcileWithPeer(peerHost string) bool {
 	}
 	defer resp.Body.Close()
 
-	var peerOrders []kdsmodels.KDSOrders
-	if err := json.NewDecoder(resp.Body).Decode(&peerOrders); err != nil {
+	var snapshot KDSReconcileSnapshot
+	if err := json.NewDecoder(resp.Body).Decode(&snapshot); err != nil {
 		fmt.Println("reconcile: decode failed: ", err)
 		return false
 	}
 
 	changed := false
-	for _, peerOrder := range peerOrders {
+	for _, peerOrder := range snapshot.Orders {
 		localOrder := getDatabaseOrderFromReference(peerOrder.Reference)
 		if localOrder.ID == 0 {
 			continue
@@ -131,6 +162,16 @@ func reconcileWithPeer(peerHost string) bool {
 				applySendToTableRemote(remoteItem)
 				changed = true
 			}
+		}
+		// Catch up a missed order-level close - the gap this whole file
+		// exists for, extended beyond items: gated on the exact same
+		// assigned_pass_terminal relationship the real-time cascade
+		// requires (isDeferredToPassTerminal), so this only ever fires for
+		// a sub-screen genuinely deferred to the pass terminal that closed
+		// it, never for a standalone terminal merely sharing a Reference.
+		if localOrder.Status == "OPEN" && peerOrder.Status == "COMPLETE" && isDeferredToPassTerminal(snapshot.Screen) {
+			closeOrderForPassScreen(localOrder.ID, snapshot.Screen, true)
+			changed = true
 		}
 	}
 	return changed

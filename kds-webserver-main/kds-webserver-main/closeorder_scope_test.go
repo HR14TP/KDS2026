@@ -20,7 +20,10 @@ func setupCloseOrderTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 	require.NoError(t, db.AutoMigrate(&kdsmodels.KDSOrders{}, &kdsmodels.KDSItems{}, &kdsmodels.KDSSubitems{}, &kdsmodels.KDSScreens{}))
-	ENV = &kdsmodels.KDSEnv{DB: db}
+	// A real (if empty) Config, not nil - reconcileSnapshotHandler reads
+	// ENV.Config.Client.Screen, and production always has a real *KDSConfig
+	// by the time any handler runs (set at boot via InitConfSQLite).
+	ENV = &kdsmodels.KDSEnv{DB: db, Config: &kdsmodels.KDSConfig{}}
 	return db
 }
 
